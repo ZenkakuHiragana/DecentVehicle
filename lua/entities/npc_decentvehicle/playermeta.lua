@@ -313,17 +313,29 @@ end
 local vehiclemeta = FindMetaTable "Vehicle"
 local GetDriver = vehiclemeta.GetDriver
 if not dvd or dvd.HasChangedVehicleMeta then return end
+
+-- Some exceptions are needed due to badly coded other addons.
+-- The wiki says Vehicle:GetDriver() returns Entity, not Player.
+-- So returning npc_vehicledriver is totally valid.
+-- However, some vehicle addons completely assume that the driver is player.
+-- and use player functions such as Player:KeyDown() without any validations.
+-- The following addons are compatible and work fine with Decent Vehicle:
+-- * Sligwolf's Motorbike (https://steamcommunity.com/sharedfiles/filedetails/?id=105144348)
+-- * TDM Commercial Vehicles (https://steamcommunity.com/sharedfiles/filedetails/?id=777864203)
 function vehiclemeta:GetDriver(...)
 	if self.DecentVehicle then
-		if Photon and istable(self.VehicleTable) and self.VehicleTable.Photon
-		and IsValid(self.PhotonVehicleSpawner) and self.PhotonVehicleSpawner:IsPlayer() then
+		if Photon and istable(self.VehicleTable)
+		and self.VehicleTable.Photon
+		and IsValid(self.PhotonVehicleSpawner)
+		and self.PhotonVehicleSpawner:IsPlayer() then
 			return self.PhotonVehicleSpawner
-		elseif self.__IsSW_Motorbike then
+		elseif self.__IsSW_Motorbike -- For Sligwolf's Motorbike.
+		or self:GetModel() == "models/tdmcars/bus.mdl" then -- For TDM Commercial Vehicles.
 			return self.DecentVehicle
 		end
 	end
 
-	return GetDriver(self, ...)
+	return GetDriver(self, ...) -- This usually returns npc_vehicledriver for Decent Vehicles.
 end
 
 dvd.HasChangedVehicleMeta = true
