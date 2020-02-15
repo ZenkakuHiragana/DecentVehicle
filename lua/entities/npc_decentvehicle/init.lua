@@ -1042,6 +1042,7 @@ function ENT:OnRemove()
 		numpad.Remove(self.HornID)
 	else
 		self.v:RemoveCallback("PhysicsCollide", self.OnCollideCallback)
+		self.v:SetSaveValue("m_nSpeed", 0)
 		if IsValid(self.NPCDriver) then
 			self.NPCDriver:Fire "Stop"
 			SafeRemoveEntity(self.NPCDriver)

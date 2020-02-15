@@ -310,6 +310,71 @@ if Photon then
 	end
 end
 
+do -- Patches for Realistic bikes from CeiLciuZ
+	-- https://steamcommunity.com/id/ceilciuz/myworkshopfiles/?appid=4000
+	function ENT:SetHelmet(int)
+		self:SetNW2Int("RealisticBike_Helmet", int)
+	end
+	
+	function ENT:GetHelmet()
+		return self:GetNW2Int("RealisticBike_Helmet")
+	end
+
+	-- Pathces for RealisticBike KTM Duke 690
+	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1734895325
+	function ENT:SetHaveHelmet_KTM_690(bool)
+		self:SetNW2Bool("RealisticBike_HaveHelmet_KTM_690", bool)
+	end
+
+	function ENT:GetHaveHelmet_KTM_690()
+		return self:GetNW2Bool("RealisticBike_HaveHelmet_KTM_690")
+	end
+
+	function ENT:SetHelmetGlass_KTM_690(bool)
+		self:SetNW2Bool("RealisticBike_HelmetGlass_KTM_690", bool)
+	end
+
+	function ENT:GetHelmetGlass_KTM_690()
+		return self:GetNW2Bool("RealisticBike_HelmetGlass_KTM_690")
+	end
+	
+	-- Patches for RealisticBike Kawasaki Ninja H2
+	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1745931343
+	function ENT:SetHaveHelmet_KAWA_NINJA_H2(bool)
+		self:SetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2", bool)
+	end
+
+	function ENT:GetHaveHelmet_KAWA_NINJA_H2()
+		return self:GetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2")
+	end
+
+	function ENT:SetHelmetGlass_KAWA_NINJA_H2(bool)
+		self:SetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2", bool)
+	end
+
+	function ENT:GetHelmetGlass_KAWA_NINJA_H2()
+		return self:GetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2")
+	end
+	
+	-- Patches for RealisticBike YAMAHA Yz 250
+	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1735177715
+	function ENT:SetHaveHelmet_Yz_250(bool)
+		self:SetNW2Bool("RealisticBike_HaveHelmet_Yz_250", bool)
+	end
+
+	function ENT:GetHaveHelmet_Yz_250()
+		return self:GetNW2Bool("RealisticBike_HaveHelmet_Yz_250")
+	end
+
+	function ENT:SetHelmetGlass_Yz_250(bool)
+		self:SetNW2Bool("RealisticBike_HelmetGlass_Yz_250", bool)
+	end
+
+	function ENT:GetHelmetGlass_Yz_250()
+		return self:GetNW2Bool("RealisticBike_HelmetGlass_Yz_250")
+	end
+end
+
 local vehiclemeta = FindMetaTable "Vehicle"
 local GetDriver = vehiclemeta.GetDriver
 if not dvd or dvd.HasChangedVehicleMeta then return end
@@ -319,9 +384,12 @@ if not dvd or dvd.HasChangedVehicleMeta then return end
 -- So returning npc_vehicledriver is totally valid.
 -- However, some vehicle addons completely assume that the driver is player.
 -- and use player functions such as Player:KeyDown() without any validations.
--- The following addons are compatible and work fine with Decent Vehicle:
+-- The following addons are compatible with some special codes and work fine with Decent Vehicle:
 -- * Sligwolf's Motorbike (https://steamcommunity.com/sharedfiles/filedetails/?id=105144348)
 -- * TDM Commercial Vehicles (https://steamcommunity.com/sharedfiles/filedetails/?id=777864203)
+-- * RealisticBike KTM Duke 690 (https://steamcommunity.com/sharedfiles/filedetails/?id=1734895325)
+-- * RealisticBike Kawasaki Ninja H2 (https://steamcommunity.com/sharedfiles/filedetails/?id=1745931343)
+-- * RealisticBike YAMAHA Yz 250 (https://steamcommunity.com/sharedfiles/filedetails/?id=1735177715)
 function vehiclemeta:GetDriver(...)
 	if self.DecentVehicle then
 		if Photon and istable(self.VehicleTable)
@@ -330,7 +398,10 @@ function vehiclemeta:GetDriver(...)
 		and self.PhotonVehicleSpawner:IsPlayer() then
 			return self.PhotonVehicleSpawner
 		elseif self.__IsSW_Motorbike -- For Sligwolf's Motorbike.
-		or self:GetModel() == "models/tdmcars/bus.mdl" then -- For TDM Commercial Vehicles.
+		or self:GetModel() == "models/tdmcars/bus.mdl" -- For TDM Commercial Vehicles.
+		or self:GetVehicleClass() == "realistic_bike_ktm_690" -- For RealisticBike KTM Duke 690
+		or self:GetVehicleClass() == "realistic_bike_kawasaki_ninja_h2" -- For RealisticBike Kawasaki Ninja H2
+		or self:GetVehicleClass() == "realistic_bike_yamaha_yz_250" then -- For RealisticBike YAMAHA Yz 250
 			return self.DecentVehicle
 		end
 	end
