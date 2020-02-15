@@ -32,7 +32,7 @@ function ENT:Think()
 			net.Send(self.Caller)
 			if engine.ActiveGamemode() == "darkrp" then
 				self.Caller:ChatPrint(dvd.Texts.Taxi.Fare:format(self.Fare))
-				self.Caller:SetDarkRPVar("money", math.max(self.Caller.DarkRPVars.money - self.Fare, 0))
+				self.Caller:setDarkRPVar("money", math.max(self.Caller.DarkRPVars.money - self.Fare, 0))
 			end
 			
 			local seats = self.v:GetChildren()
