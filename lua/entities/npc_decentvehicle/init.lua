@@ -946,6 +946,8 @@ function ENT:Initialize()
 			self.NPCDriver.InVehicle = self.InVehicle
 			self.NPCDriver.GetViewPunchAngles = self.GetViewPunchAngles -- For Seat Weaponizer 2
 			self.NPCDriver.SetViewPunchAngles = self.SetViewPunchAngles -- Just to be sure
+			self.NPCDriver:SetHealth(0) -- This makes other NPCs think the driver is dead
+			self.NPCDriver:SetSaveValue("m_lifeState", -1) -- so that they don't attack it.
 			function self.NPCDriver.KeyDown(_, key)
 				return key == IN_FORWARD and self.Throttle > 0
 				or key == IN_BACK and self.Throttle < 0
