@@ -1065,7 +1065,9 @@ function ENT:OnRemove()
 
 	local e = EffectData()
 	e:SetEntity(self.v)
-	util.Effect("propspawn", e) -- Perform a spawn effect.
+	if not self.DontUseSpawnEffect then
+		util.Effect("propspawn", e) -- Perform a spawn effect.
+	end
 end
 
 if VCModFixedAroundNPCDriver then return end -- WORKAROUND!!!
