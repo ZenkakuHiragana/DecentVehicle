@@ -223,6 +223,7 @@ hook.Add("PostDrawTranslucentRenderables", "Decent Vehicle: Draw waypoints",
 function(bDrawingDepth, bDrawingSkybox)
 	local weapon = LocalPlayer():GetActiveWeapon()
 	if not IsValid(weapon) then return end
+	if not isfunction(LocalPlayer().GetTool) then return end
 
 	local always = GetConVar "dv_route_showalways"
 	local showpoints = GetConVar "dv_route_showpoints"

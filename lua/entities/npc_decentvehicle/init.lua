@@ -147,7 +147,10 @@ local function GetFogInfo()
 		end
 	end
 
-	if IsValid(FogEditor) then return true, FogEditor:GetFogEnd() end
+	if IsValid(FogEditor) and isfunction(FogEditor.GetFogEnd) then
+		return true, FogEditor:GetFogEnd()
+	end
+
 	if not StormFox then
 		local FogTable = ents.FindByClass "env_fog_controller"
 		local FogController
