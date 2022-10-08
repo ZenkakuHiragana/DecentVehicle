@@ -359,6 +359,7 @@ function ENT:AttachModel()
  end
 
 function ENT:IsDestroyed()
+	if self.v:IsFlagSet(FL_DISSOLVING) then return true end
 	if self.v.IsScar then
 		return self.v:IsDestroyed()
 	elseif self.v.IsSimfphyscar then
@@ -393,7 +394,7 @@ end
 
 function ENT:IsValidVehicle()
 	if not IsValid(self.v) then return end -- The tied vehicle goes NULL.
-	if not self.v:IsVehicle() then return end -- Somehow it become non-vehicle entity.
+	if not self.v:IsVehicle() then return end -- Somehow it becomes non-vehicle entity.
 	if not self.v.DecentVehicle then return end -- Somehow it's a normal vehicle.
 	if not IsValid(self:GetNWEntity "Seat") then return end -- It couldn't find the driver seat.
 	if self ~= self.v.DecentVehicle then return end -- It has a different driver.
