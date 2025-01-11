@@ -8,17 +8,17 @@ include "playermeta.lua"
 
 local dvd = DecentVehicleDestination
 function ENT:Think()
-	self:SetDriverPosition()
-	self:SetSequence(self:GetNWInt "Sequence")
+    self:SetDriverPosition()
+    self:SetSequence(self:GetNWInt "Sequence")
 end
 
 function ENT:Draw()
-	local seat = self:GetNWEntity "Seat"
-	if IsValid(seat) then
-		self:SetPos(seat:LocalToWorld(self:GetNWVector "Pos"))
-		self:SetAngles(seat:LocalToWorldAngles(self:GetNWAngle "Ang"))
-		self:SetupBones()
-	end
-	
-	self:DrawModel()
+    local seat = self:GetNWEntity "Seat"
+    if IsValid(seat) then
+        self:SetPos(seat:LocalToWorld(self:GetNWVector "Pos"))
+        self:SetAngles(seat:LocalToWorldAngles(self:GetNWAngle "Ang"))
+        self:SetupBones()
+    end
+
+    self:DrawModel()
 end

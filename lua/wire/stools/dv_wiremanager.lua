@@ -3,15 +3,15 @@ WireToolSetup.open( "dv_wiremanager", "Waypoint Manager", "gmod_wire_dvmanager",
 
 local dvd = DecentVehicleDestination
 if CLIENT then
-	language.Add( "Tool.wire_dv_wiremanager.name", dvd.Texts.WireSupport.ToolName)
-	language.Add( "Tool.wire_dv_wiremanager.desc", dvd.Texts.WireSupport.ToolDesc)
+    language.Add( "Tool.wire_dv_wiremanager.name", dvd.Texts.WireSupport.ToolName)
+    language.Add( "Tool.wire_dv_wiremanager.desc", dvd.Texts.WireSupport.ToolDesc)
 end
 WireToolSetup.BaseLang()
 WireToolSetup.SetupMax( 100 )
 WireToolSetup.SetupLinking(true, "waypoint")
 
 TOOL.ClientConVar = {
-	model = "models/props_c17/lampShade001a.mdl",
+    model = "models/props_c17/lampShade001a.mdl",
 }
 
 if SERVER then function TOOL:GetConVars() end end
@@ -68,5 +68,5 @@ function TOOL:Reload(trace)
 end
 
 function TOOL.BuildCPanel(panel)
-	WireDermaExts.ModelSelect(panel, "wire_dv_wiremanager_model", list.Get( "[DV] WireManager Model List" ), 4, true)
+    WireDermaExts.ModelSelect(panel, "wire_dv_wiremanager_model", list.Get( "[DV] WireManager Model List" ), 4, true)
 end

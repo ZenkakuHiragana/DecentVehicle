@@ -15,51 +15,52 @@ ENT.IsDVTaxiStation = true
 
 local dvd = DecentVehicleDestination
 function ENT:SetupDataTables()
-	self:NetworkVar("String", 0, "StationName", {
-		KeyName = "stationname",
-		Edit = {type = "Name", order = 4}
-	})
+    self:NetworkVar("String", 0, "StationName", {
+        KeyName = "stationname",
+        Edit = {type = "Name", order = 4}
+    })
 end
 
 if CLIENT then
-	function ENT:Draw()
-		self:DrawModel()
-	end
-	
-	return
+    function ENT:Draw()
+        self:DrawModel()
+    end
+
+    return
 end
 
+
 function ENT:Initialize()
-	self:SetModel "models/decentvehicle/ent_dvtaxi_station.mdl"
-	
-	self:PhysicsInitShadow()
-	self:SetMoveType(MOVETYPE_VPHYSICS)
-	self:SetSolid(SOLID_VPHYSICS)
-	self:SetUseType(SIMPLE_USE)
-	self:DrawShadow(false)
-	dvd.TaxiStations[self] = true
+    self:SetModel "models/decentvehicle/ent_dvtaxi_station.mdl"
+
+    self:PhysicsInitShadow()
+    self:SetMoveType(MOVETYPE_VPHYSICS)
+    self:SetSolid(SOLID_VPHYSICS)
+    self:SetUseType(SIMPLE_USE)
+    self:DrawShadow(false)
+    dvd.TaxiStations[self] = true
 end
 
 function ENT:OnRemove()
-	dvd.TaxiStations[self] = nil
+    dvd.TaxiStations[self] = nil
 end
 
 function ENT:Use(activator, caller)
-	if not caller:IsPlayer() then return end
-	
-	net.Start "Decent Vehicle: Open a taxi menu"
-	net.WriteEntity(self)
-	net.Send(caller)
+    if not caller:IsPlayer() then return end
+
+    net.Start "Decent Vehicle: Open a taxi menu"
+    net.WriteEntity(self)
+    net.Send(caller)
 end
 
 function ENT:SpawnFunction(ply, tr, ClassName)
-	if not tr.Hit then return end
-	local pos = tr.HitPos + tr.HitNormal
-	local ang = dvd.GetDir(tr.StartPos, tr.HitPos):Angle()
-	local ent = ents.Create(ClassName)
-	ent:SetAngles(Angle(0, ang.yaw, 0))
-	ent:SetPos(pos)
-	ent:Spawn()
-	
-	return ent
+    if not tr.Hit then return end
+    local pos = tr.HitPos + tr.HitNormal
+    local ang = dvd.GetDir(tr.StartPos, tr.HitPos):Angle()
+    local ent = ents.Create(ClassName)
+    ent:SetAngles(Angle(0, ang.yaw, 0))
+    ent:SetPos(pos)
+    ent:Spawn()
+
+    return ent
 end

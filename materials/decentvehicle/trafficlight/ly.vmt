@@ -5,24 +5,24 @@
 
 "UnlitGeneric"
 {
-	"$basetexture" "decentvehicle/trafficlight/ly"
-	"$nodecal" "1"
-	"$phong" "1" 
-	"$phongboost" "0.1" 
-	"$phongfresnelranges" "[1 1 1]" 
-	"$phongexponent" 150
-	"$envmap" "env_cubemap"
-	"$envmaptint" "[0.1 0.1 0.1]"
-	"$envmapfresnel" "1.65"
-	"$halflambert" 1
-	"$colorfix" "{255 255 255}"
-	"$selfillum" 1
-	"Proxies"
-	{
-		"Equals"
-		{
-			srcVar1 $colorfix
-			resultVar	$color
-		}
-	}
+    "$basetexture" "decentvehicle/trafficlight/ly"
+    "$nodecal" "1"
+    "$phong" "1"
+    "$phongboost" "0.1"
+    "$phongfresnelranges" "[1 1 1]"
+    "$phongexponent" 150
+    "$envmap" "env_cubemap"
+    "$envmaptint" "[0.1 0.1 0.1]"
+    "$envmapfresnel" "1.65"
+    "$halflambert" 1
+    "$colorfix" "{255 255 255}"
+    "$selfillum" 1
+    "Proxies"
+    {
+        "Equals"
+        {
+            srcVar1 $colorfix
+            resultVar $color
+        }
+    }
 }

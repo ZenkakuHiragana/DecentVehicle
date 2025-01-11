@@ -13,13 +13,13 @@ ENT.Editable = true
 ENT.IsDVTrafficLight = true
 
 function ENT:SetupDataTables()
-	self:NetworkVar("Int", 0, "Pattern", {
-		KeyName = "pattern",
-		Edit = {
-			type = "Int",
-			order = 1,
-			min = 1,
-			max = #DecentVehicleDestination.TrafficLights,
-		},
-	})
-end	
+    self:NetworkVar("Int", 0, "Pattern", {
+        KeyName = "pattern",
+        Edit = {
+            type = "Int",
+            order = 1,
+            min = 1,
+            max = #DecentVehicleDestination.TrafficLights,
+        },
+    })
+end

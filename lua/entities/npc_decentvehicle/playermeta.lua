@@ -6,7 +6,7 @@
 local dvd = DecentVehicleDestination
 local FakeViewOffset = vector_up * 32
 local function FakeEyeTrace(self)
-	return util.QuickTrace(self:GetPos(), self:GetVehicleForward() * 16384, self)
+    return util.QuickTrace(self:GetPos(), self:GetVehicleForward() * 16384, self)
 end
 
 function ENT:AccountID() end -- For bots and in singleplayer, return no value
@@ -165,47 +165,47 @@ function ENT:TranslateWeaponActivity() return ACT_INVALID end
 function ENT:UnfreezePhysicsObjects() end
 function ENT:UniqueID() return self:EntIndex() end
 function ENT:UniqueIDTable(key)
-	self.UniqueTable = self.UniqueTable or {}
-	self.UniqueTable[key] = self.UniqueTable[key] or {}
-	return self.UniqueTable[key]
+    self.UniqueTable = self.UniqueTable or {}
+    self.UniqueTable[key] = self.UniqueTable[key] or {}
+    return self.UniqueTable[key]
 end
 function ENT:UserID() return 0 end
 function ENT:ViewPunch() end
 function ENT:ViewPunchReset() end
 
 if CLIENT then
-	function ENT:AddPlayerOption() end
-	function ENT:GetFriendStatus() return "none" end
-	function ENT:GetPlayerInfo()
-		return {
-			customfiles = {"00000000", "00000000", "00000000", "00000000"},
-			fakeplayer = true,
-			filesdownloaded = 0,
-			friendid = 0,
-			friendname = "",
-			guid = "BOT",
-			ishltv = false,
-			name = self.PrintName,
-			userid = 1,
-		}
-	end
-	function ENT:IsMuted() return false end
-	function ENT:IsSpeaking() return false end
-	function ENT:IsVoiceAudible() return false end
-	function ENT:KeyDown() return false end
-	function ENT:SetMuted() end
-	function ENT:ShouldDrawLocalPlayer() return false end
-	function ENT:ShowProfile() end
-	function ENT:SteamID64() end
-	function ENT:VoiceVolume() return 0 end
-	return
+    function ENT:AddPlayerOption() end
+    function ENT:GetFriendStatus() return "none" end
+    function ENT:GetPlayerInfo()
+        return {
+            customfiles = {"00000000", "00000000", "00000000", "00000000"},
+            fakeplayer = true,
+            filesdownloaded = 0,
+            friendid = 0,
+            friendname = "",
+            guid = "BOT",
+            ishltv = false,
+            name = self.PrintName,
+            userid = 1,
+        }
+    end
+    function ENT:IsMuted() return false end
+    function ENT:IsSpeaking() return false end
+    function ENT:IsVoiceAudible() return false end
+    function ENT:KeyDown() return false end
+    function ENT:SetMuted() end
+    function ENT:ShouldDrawLocalPlayer() return false end
+    function ENT:ShowProfile() end
+    function ENT:SteamID64() end
+    function ENT:VoiceVolume() return 0 end
+    return
 end
 
 local InfoNum = {
-	cl_simfphys_ctenable = 1,
-	cl_simfphys_ctmul = .7,
-	cl_simfphys_ctang = 15,
-	cl_simfphys_auto = 1,
+    cl_simfphys_ctenable = 1,
+    cl_simfphys_ctmul = .7,
+    cl_simfphys_ctang = 15,
+    cl_simfphys_auto = 1,
 }
 function ENT:AddDeaths() end
 function ENT:AddFrags() end
@@ -228,7 +228,7 @@ function ENT:Flashlight() end
 function ENT:Freeze() end
 function ENT:GetInfo() return "" end
 function ENT:GetInfoNum(key, default) --For Simfphys Vehicles
-	return InfoNum[key] or isnumber(default) and default or 0
+    return InfoNum[key] or isnumber(default) and default or 0
 end
 function ENT:GetPreferredCarryAngles() end
 function ENT:GetTimeoutSeconds() return 0 end
@@ -242,12 +242,12 @@ function ENT:IsFullyAuthenticated() return false end
 function ENT:IsListenServerHost() return false end
 function ENT:IsTimingOut() return false end
 function ENT:KeyDown(key)
-	return key == IN_FORWARD and self.Throttle > 0
-	or key == IN_BACK and self.Throttle < 0
-	or key == IN_MOVELEFT and self.Steering < 0
-	or key == IN_MOVERIGHT and self.Steering > 0
-	or key == IN_JUMP and self.HandBrake
-	or false
+    return key == IN_FORWARD and self.Throttle > 0
+    or key == IN_BACK and self.Throttle < 0
+    or key == IN_MOVELEFT and self.Steering < 0
+    or key == IN_MOVERIGHT and self.Steering > 0
+    or key == IN_JUMP and self.HandBrake
+    or false
 end
 function ENT:Kick() end
 function ENT:Kill() end
@@ -297,82 +297,82 @@ function ENT:UnLock() end
 function ENT:UnSpectate() end
 
 if Photon then
-	function ENT:IsBraking()
-		local dv = self.DecentVehicle
-		if not IsValid(dv) then return false end
-		return dv.HandBrake
-	end
+    function ENT:IsBraking()
+        local dv = self.DecentVehicle
+        if not IsValid(dv) then return false end
+        return dv.HandBrake
+    end
 
-	function ENT:IsReversing()
-		local dv = self.DecentVehicle
-		if not IsValid(dv) then return false end
-		return dv.Throttle < 0 and self:GetVelocity():Dot(dv:GetVehicleForward()) < 0
-	end
+    function ENT:IsReversing()
+        local dv = self.DecentVehicle
+        if not IsValid(dv) then return false end
+        return dv.Throttle < 0 and self:GetVelocity():Dot(dv:GetVehicleForward()) < 0
+    end
 end
 
 do -- Patches for Realistic bikes from CeiLciuZ
-	-- https://steamcommunity.com/id/ceilciuz/myworkshopfiles/?appid=4000
-	function ENT:SetHelmet(int)
-		self:SetNW2Int("RealisticBike_Helmet", int)
-	end
-	
-	function ENT:GetHelmet()
-		return self:GetNW2Int("RealisticBike_Helmet")
-	end
+    -- https://steamcommunity.com/id/ceilciuz/myworkshopfiles/?appid=4000
+    function ENT:SetHelmet(int)
+        self:SetNW2Int("RealisticBike_Helmet", int)
+    end
 
-	-- Pathces for RealisticBike KTM Duke 690
-	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1734895325
-	function ENT:SetHaveHelmet_KTM_690(bool)
-		self:SetNW2Bool("RealisticBike_HaveHelmet_KTM_690", bool)
-	end
+    function ENT:GetHelmet()
+        return self:GetNW2Int("RealisticBike_Helmet")
+    end
 
-	function ENT:GetHaveHelmet_KTM_690()
-		return self:GetNW2Bool("RealisticBike_HaveHelmet_KTM_690")
-	end
+    -- Pathces for RealisticBike KTM Duke 690
+    -- https://steamcommunity.com/sharedfiles/filedetails/?id=1734895325
+    function ENT:SetHaveHelmet_KTM_690(bool)
+        self:SetNW2Bool("RealisticBike_HaveHelmet_KTM_690", bool)
+    end
 
-	function ENT:SetHelmetGlass_KTM_690(bool)
-		self:SetNW2Bool("RealisticBike_HelmetGlass_KTM_690", bool)
-	end
+    function ENT:GetHaveHelmet_KTM_690()
+        return self:GetNW2Bool("RealisticBike_HaveHelmet_KTM_690")
+    end
 
-	function ENT:GetHelmetGlass_KTM_690()
-		return self:GetNW2Bool("RealisticBike_HelmetGlass_KTM_690")
-	end
-	
-	-- Patches for RealisticBike Kawasaki Ninja H2
-	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1745931343
-	function ENT:SetHaveHelmet_KAWA_NINJA_H2(bool)
-		self:SetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2", bool)
-	end
+    function ENT:SetHelmetGlass_KTM_690(bool)
+        self:SetNW2Bool("RealisticBike_HelmetGlass_KTM_690", bool)
+    end
 
-	function ENT:GetHaveHelmet_KAWA_NINJA_H2()
-		return self:GetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2")
-	end
+    function ENT:GetHelmetGlass_KTM_690()
+        return self:GetNW2Bool("RealisticBike_HelmetGlass_KTM_690")
+    end
 
-	function ENT:SetHelmetGlass_KAWA_NINJA_H2(bool)
-		self:SetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2", bool)
-	end
+    -- Patches for RealisticBike Kawasaki Ninja H2
+    -- https://steamcommunity.com/sharedfiles/filedetails/?id=1745931343
+    function ENT:SetHaveHelmet_KAWA_NINJA_H2(bool)
+        self:SetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2", bool)
+    end
 
-	function ENT:GetHelmetGlass_KAWA_NINJA_H2()
-		return self:GetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2")
-	end
-	
-	-- Patches for RealisticBike YAMAHA Yz 250
-	-- https://steamcommunity.com/sharedfiles/filedetails/?id=1735177715
-	function ENT:SetHaveHelmet_Yz_250(bool)
-		self:SetNW2Bool("RealisticBike_HaveHelmet_Yz_250", bool)
-	end
+    function ENT:GetHaveHelmet_KAWA_NINJA_H2()
+        return self:GetNW2Bool("RealisticBike_HaveHelmet_KAWA_NINJA_H2")
+    end
 
-	function ENT:GetHaveHelmet_Yz_250()
-		return self:GetNW2Bool("RealisticBike_HaveHelmet_Yz_250")
-	end
+    function ENT:SetHelmetGlass_KAWA_NINJA_H2(bool)
+        self:SetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2", bool)
+    end
 
-	function ENT:SetHelmetGlass_Yz_250(bool)
-		self:SetNW2Bool("RealisticBike_HelmetGlass_Yz_250", bool)
-	end
+    function ENT:GetHelmetGlass_KAWA_NINJA_H2()
+        return self:GetNW2Bool("RealisticBike_HelmetGlass_KAWA_NINJA_H2")
+    end
 
-	function ENT:GetHelmetGlass_Yz_250()
-		return self:GetNW2Bool("RealisticBike_HelmetGlass_Yz_250")
-	end
+    -- Patches for RealisticBike YAMAHA Yz 250
+    -- https://steamcommunity.com/sharedfiles/filedetails/?id=1735177715
+    function ENT:SetHaveHelmet_Yz_250(bool)
+        self:SetNW2Bool("RealisticBike_HaveHelmet_Yz_250", bool)
+    end
+
+    function ENT:GetHaveHelmet_Yz_250()
+        return self:GetNW2Bool("RealisticBike_HaveHelmet_Yz_250")
+    end
+
+    function ENT:SetHelmetGlass_Yz_250(bool)
+        self:SetNW2Bool("RealisticBike_HelmetGlass_Yz_250", bool)
+    end
+
+    function ENT:GetHelmetGlass_Yz_250()
+        return self:GetNW2Bool("RealisticBike_HelmetGlass_Yz_250")
+    end
 end
 
 local vehiclemeta = FindMetaTable "Vehicle"
@@ -391,22 +391,22 @@ if not dvd or dvd.HasChangedVehicleMeta then return end
 -- * RealisticBike Kawasaki Ninja H2 (https://steamcommunity.com/sharedfiles/filedetails/?id=1745931343)
 -- * RealisticBike YAMAHA Yz 250 (https://steamcommunity.com/sharedfiles/filedetails/?id=1735177715)
 function vehiclemeta:GetDriver(...)
-	if self.DecentVehicle then
-		if Photon and istable(self.VehicleTable)
-		and self.VehicleTable.Photon
-		and IsValid(self.PhotonVehicleSpawner)
-		and self.PhotonVehicleSpawner:IsPlayer() then
-			return self.PhotonVehicleSpawner
-		elseif self.__IsSW_Motorbike -- For Sligwolf's Motorbike.
-		or self:GetModel() == "models/tdmcars/bus.mdl" -- For TDM Commercial Vehicles.
-		or self:GetVehicleClass() == "realistic_bike_ktm_690" -- For RealisticBike KTM Duke 690
-		or self:GetVehicleClass() == "realistic_bike_kawasaki_ninja_h2" -- For RealisticBike Kawasaki Ninja H2
-		or self:GetVehicleClass() == "realistic_bike_yamaha_yz_250" then -- For RealisticBike YAMAHA Yz 250
-			return self.DecentVehicle
-		end
-	end
+    if self.DecentVehicle then
+        if Photon and istable(self.VehicleTable)
+        and self.VehicleTable.Photon
+        and IsValid(self.PhotonVehicleSpawner)
+        and self.PhotonVehicleSpawner:IsPlayer() then
+            return self.PhotonVehicleSpawner
+        elseif self.__IsSW_Motorbike -- For Sligwolf's Motorbike.
+        or self:GetModel() == "models/tdmcars/bus.mdl" -- For TDM Commercial Vehicles.
+        or self:GetVehicleClass() == "realistic_bike_ktm_690" -- For RealisticBike KTM Duke 690
+        or self:GetVehicleClass() == "realistic_bike_kawasaki_ninja_h2" -- For RealisticBike Kawasaki Ninja H2
+        or self:GetVehicleClass() == "realistic_bike_yamaha_yz_250" then -- For RealisticBike YAMAHA Yz 250
+            return self.DecentVehicle
+        end
+    end
 
-	return GetDriver(self, ...) -- This usually returns npc_vehicledriver for Decent Vehicles.
+    return GetDriver(self, ...) -- This usually returns npc_vehicledriver for Decent Vehicles.
 end
 
 dvd.HasChangedVehicleMeta = true

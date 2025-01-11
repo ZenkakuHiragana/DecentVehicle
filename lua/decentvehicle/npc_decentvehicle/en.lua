@@ -4,5 +4,5 @@
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
 return {
-	npc_decentvehicle = "Decent Vehicle",
+    npc_decentvehicle = "Decent Vehicle",
 }

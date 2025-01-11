@@ -12,201 +12,201 @@ include "autorun/decentvehicle.lua"
 -- Returns if v1 < v2
 local VersionConst = Vector(1e8, 1e4, 1)
 local function CompareVersion(v1, v2)
-	v1 = Vector(tonumber(v1[1]) or 0, tonumber(v1[2]) or 0, tonumber(v1[3]) or 0)
-	v2 = Vector(tonumber(v2[1]) or 0, tonumber(v2[2]) or 0, tonumber(v2[3]) or 0)
-	return v1:Dot(VersionConst) < v2:Dot(VersionConst)
+    v1 = Vector(tonumber(v1[1]) or 0, tonumber(v1[2]) or 0, tonumber(v1[3]) or 0)
+    v2 = Vector(tonumber(v2[1]) or 0, tonumber(v2[2]) or 0, tonumber(v2[3]) or 0)
+    return v1:Dot(VersionConst) < v2:Dot(VersionConst)
 end
 
 local dvd = DecentVehicleDestination
 local function NotifyUpdate(d)
-	if not d then return end
-	-- local header = d.description:match(dvd.Texts.VersionPrefix .. "[^%c]+") or ""
-	local header = d.description:match "Version[^%c]+" or ""
-	dvd.Texts.Version = "Decent Vehicle: " .. header
+    if not d then return end
+    -- local header = d.description:match(dvd.Texts.VersionPrefix .. "[^%c]+") or ""
+    local header = d.description:match "Version[^%c]+" or ""
+    dvd.Texts.Version = "Decent Vehicle: " .. header
 
-	local showupdates = GetConVar "dv_route_showupdates"
-	if not (showupdates and showupdates:GetBool()) then return end
+    local showupdates = GetConVar "dv_route_showupdates"
+    if not (showupdates and showupdates:GetBool()) then return end
 
-	if not file.Exists("decentvehicle", "DATA") then file.CreateDir "decentvehicle" end
-	local versionfile = "decentvehicle/version.txt"
-	local checkedversion = string.Explode(".", file.Read(versionfile) or "0.0.0")
-	local version = string.Explode(".", header:sub(8):Trim())
-	if tonumber(checkedversion[1]) > 1e8 then checkedversion = {} end -- Backward compatibility
-	if CompareVersion(dvd.Version, version) then
-		notification.AddLegacy(dvd.Texts.OldVersionNotify, NOTIFY_ERROR, 15)
-	elseif CompareVersion(checkedversion, dvd.Version) then
-		local i = 0
-		local sub = d.description:find "quote=Decent Vehicle"
-		if not sub then return end
-		local description = d.description:sub(1, sub - 2)
-		notification.AddLegacy("Decent Vehicle " .. header, NOTIFY_GENERIC, 18)
-		for update in description:gmatch "%[%*%][^%c]+" do
-			timer.Simple(3 * i, function()
-				if not showupdates:GetBool() then return end
-				notification.AddLegacy(update:sub(4), NOTIFY_UNDO, 6)
-			end)
+    if not file.Exists("decentvehicle", "DATA") then file.CreateDir "decentvehicle" end
+    local versionfile = "decentvehicle/version.txt"
+    local checkedversion = string.Explode(".", file.Read(versionfile) or "0.0.0")
+    local version = string.Explode(".", header:sub(8):Trim())
+    if tonumber(checkedversion[1]) > 1e8 then checkedversion = {} end -- Backward compatibility
+    if CompareVersion(dvd.Version, version) then
+        notification.AddLegacy(dvd.Texts.OldVersionNotify, NOTIFY_ERROR, 15)
+    elseif CompareVersion(checkedversion, dvd.Version) then
+        local i = 0
+        local sub = d.description:find "quote=Decent Vehicle"
+        if not sub then return end
+        local description = d.description:sub(1, sub - 2)
+        notification.AddLegacy("Decent Vehicle " .. header, NOTIFY_GENERIC, 18)
+        for update in description:gmatch "%[%*%][^%c]+" do
+            timer.Simple(3 * i, function()
+                if not showupdates:GetBool() then return end
+                notification.AddLegacy(update:sub(4), NOTIFY_UNDO, 6)
+            end)
 
-			i = i + 1
-		end
+            i = i + 1
+        end
 
-		file.Write(versionfile, string.format("%d.%d.%d",
-		dvd.Version[1], dvd.Version[2], dvd.Version[3]))
-	end
+        file.Write(versionfile, string.format("%d.%d.%d",
+        dvd.Version[1], dvd.Version[2], dvd.Version[3]))
+    end
 end
 
 net.Receive("Decent Vehicle: Add a waypoint", function()
-	local pos = net.ReadVector()
-	local waypoint = {Target = pos, Neighbors = {}}
-	table.insert(dvd.Waypoints, waypoint)
+    local pos = net.ReadVector()
+    local waypoint = {Target = pos, Neighbors = {}}
+    table.insert(dvd.Waypoints, waypoint)
 end)
 
 net.Receive("Decent Vehicle: Remove a waypoint", function()
-	local id = net.ReadUInt(24)
-	for _, w in ipairs(dvd.Waypoints) do
-		local Neighbors = {}
-		for _, n in ipairs(w.Neighbors) do
-			if n > id then
-				table.insert(Neighbors, n - 1)
-			elseif n < id then
-				table.insert(Neighbors, n)
-			end
-		end
+    local id = net.ReadUInt(24)
+    for _, w in ipairs(dvd.Waypoints) do
+        local Neighbors = {}
+        for _, n in ipairs(w.Neighbors) do
+            if n > id then
+                table.insert(Neighbors, n - 1)
+            elseif n < id then
+                table.insert(Neighbors, n)
+            end
+        end
 
-		w.Neighbors = Neighbors
-	end
+        w.Neighbors = Neighbors
+    end
 
-	table.remove(dvd.Waypoints, id)
+    table.remove(dvd.Waypoints, id)
 end)
 
 net.Receive("Decent Vehicle: Add a neighbor", function()
-	local from = net.ReadUInt(24)
-	local to = net.ReadUInt(24)
-	if not dvd.Waypoints[from] then return end
-	table.insert(dvd.Waypoints[from].Neighbors, to)
+    local from = net.ReadUInt(24)
+    local to = net.ReadUInt(24)
+    if not dvd.Waypoints[from] then return end
+    table.insert(dvd.Waypoints[from].Neighbors, to)
 end)
 
 net.Receive("Decent Vehicle: Remove a neighbor", function()
-	local from = net.ReadUInt(24)
-	local to = net.ReadUInt(24)
-	if not dvd.Waypoints[from] then return end
-	table.RemoveByValue(dvd.Waypoints[from].Neighbors, to)
+    local from = net.ReadUInt(24)
+    local to = net.ReadUInt(24)
+    if not dvd.Waypoints[from] then return end
+    table.RemoveByValue(dvd.Waypoints[from].Neighbors, to)
 end)
 
 net.Receive("Decent Vehicle: Traffic light", function()
-	local id = net.ReadUInt(24)
-	local traffic = net.ReadEntity()
-	if not dvd.Waypoints[id] then return end
-	dvd.Waypoints[id].TrafficLight = Either(IsValid(traffic), traffic, nil)
+    local id = net.ReadUInt(24)
+    local traffic = net.ReadEntity()
+    if not dvd.Waypoints[id] then return end
+    dvd.Waypoints[id].TrafficLight = Either(IsValid(traffic), traffic, nil)
 end)
 
 local PopupTexts = {
-	dvd.Texts.OnSave,
-	dvd.Texts.OnLoad,
-	dvd.Texts.OnDelete,
-	dvd.Texts.OnGenerate,
+    dvd.Texts.OnSave,
+    dvd.Texts.OnLoad,
+    dvd.Texts.OnDelete,
+    dvd.Texts.OnGenerate,
 }
 local Notifications = {
-	dvd.Texts.SavedWaypoints,
-	dvd.Texts.LoadedWaypoints,
-	dvd.Texts.DeletedWaypoints,
-	dvd.Texts.GeneratedWaypoints,
+    dvd.Texts.SavedWaypoints,
+    dvd.Texts.LoadedWaypoints,
+    dvd.Texts.DeletedWaypoints,
+    dvd.Texts.GeneratedWaypoints,
 }
 net.Receive("Decent Vehicle: Save and restore", function()
-	local save = net.ReadUInt(dvd.POPUPWINDOW.BITS)
-	local Confirm = vgui.Create "DFrame"
-	local Text = Label(PopupTexts[save + 1], Confirm)
-	local Cancel = vgui.Create "DButton"
-	local OK = vgui.Create "DButton"
-	Confirm:Add(Cancel)
-	Confirm:Add(OK)
-	Confirm:SetSize(ScrW() / 5, ScrH() / 5)
-	Confirm:SetTitle "Decent Vehicle"
-	Confirm:SetBackgroundBlur(true)
-	Confirm:ShowCloseButton(false)
-	Confirm:Center()
-	Cancel:SetText(dvd.Texts.SaveLoad_Cancel)
-	Cancel:SetSize(Confirm:GetWide() * 5 / 16, 22)
-	Cancel:SetPos(Confirm:GetWide() * 7 / 8 - Cancel:GetWide(), Confirm:GetTall() - 22 - Cancel:GetTall())
-	OK:SetText(dvd.Texts.SaveLoad_OK)
-	OK:SetSize(Confirm:GetWide() * 5 / 16, 22)
-	OK:SetPos(Confirm:GetWide() / 8, Confirm:GetTall() - 22 - OK:GetTall())
-	Text:SizeToContents()
-	Text:Center()
-	Confirm:MakePopup()
+    local save = net.ReadUInt(dvd.POPUPWINDOW.BITS)
+    local Confirm = vgui.Create "DFrame"
+    local Text = Label(PopupTexts[save + 1], Confirm)
+    local Cancel = vgui.Create "DButton"
+    local OK = vgui.Create "DButton"
+    Confirm:Add(Cancel)
+    Confirm:Add(OK)
+    Confirm:SetSize(ScrW() / 5, ScrH() / 5)
+    Confirm:SetTitle "Decent Vehicle"
+    Confirm:SetBackgroundBlur(true)
+    Confirm:ShowCloseButton(false)
+    Confirm:Center()
+    Cancel:SetText(dvd.Texts.SaveLoad_Cancel)
+    Cancel:SetSize(Confirm:GetWide() * 5 / 16, 22)
+    Cancel:SetPos(Confirm:GetWide() * 7 / 8 - Cancel:GetWide(), Confirm:GetTall() - 22 - Cancel:GetTall())
+    OK:SetText(dvd.Texts.SaveLoad_OK)
+    OK:SetSize(Confirm:GetWide() * 5 / 16, 22)
+    OK:SetPos(Confirm:GetWide() / 8, Confirm:GetTall() - 22 - OK:GetTall())
+    Text:SizeToContents()
+    Text:Center()
+    Confirm:MakePopup()
 
-	function Cancel:DoClick() Confirm:Close() end
-	function OK:DoClick()
-		net.Start "Decent Vehicle: Save and restore"
-		net.WriteUInt(save, dvd.POPUPWINDOW.BITS)
-		net.SendToServer()
-		notification.AddLegacy(Notifications[save + 1], NOTIFY_GENERIC, 5)
+    function Cancel:DoClick() Confirm:Close() end
+    function OK:DoClick()
+        net.Start "Decent Vehicle: Save and restore"
+        net.WriteUInt(save, dvd.POPUPWINDOW.BITS)
+        net.SendToServer()
+        notification.AddLegacy(Notifications[save + 1], NOTIFY_GENERIC, 5)
 
-		Confirm:Close()
-	end
+        Confirm:Close()
+    end
 end)
 
 hook.Add("PostCleanupMap", "Decent Vehicle: Clean up waypoints", function()
-	table.Empty(dvd.Waypoints)
+    table.Empty(dvd.Waypoints)
 end)
 
 hook.Add("InitPostEntity", "Decent Vehicle: Load waypoints", function()
-	net.Start "Decent Vehicle: Retrive waypoints"
-	net.WriteUInt(1, 24)
-	net.SendToServer()
+    net.Start "Decent Vehicle: Retrive waypoints"
+    net.WriteUInt(1, 24)
+    net.SendToServer()
 
-	steamworks.FileInfo("1587455087", NotifyUpdate)
+    steamworks.FileInfo("1587455087", NotifyUpdate)
 end)
 
 net.Receive("Decent Vehicle: Retrive waypoints", function()
-	local id = net.ReadUInt(24)
-	if id < 1 then return end
-	local pos = net.ReadVector()
-	local traffic = net.ReadEntity()
-	if not IsValid(traffic) then traffic = nil end
-	local fuelstation = net.ReadBool()
-	local useturnlights = net.ReadBool()
-	local waituntilnext = net.ReadFloat()
-	local speedlimit = net.ReadFloat()
-	local group = net.ReadInt(8)
-	local num = net.ReadUInt(14)
-	local neighbors = {}
-	for i = 1, num do
-		table.insert(neighbors, net.ReadUInt(24))
-	end
+    local id = net.ReadUInt(24)
+    if id < 1 then return end
+    local pos = net.ReadVector()
+    local traffic = net.ReadEntity()
+    if not IsValid(traffic) then traffic = nil end
+    local fuelstation = net.ReadBool()
+    local useturnlights = net.ReadBool()
+    local waituntilnext = net.ReadFloat()
+    local speedlimit = net.ReadFloat()
+    local group = net.ReadInt(8)
+    local num = net.ReadUInt(14)
+    local neighbors = {}
+    for i = 1, num do
+        table.insert(neighbors, net.ReadUInt(24))
+    end
 
-	dvd.Waypoints[id] = {
-		Target = pos,
-		TrafficLight = traffic,
-		FuelStation = fuelstation,
-		UseTurnLights = useturnlights,
-		WaitUntilNext = waituntilnext,
-		SpeedLimit = speedlimit,
-		Group = group,
-		Neighbors = neighbors,
-	}
+    dvd.Waypoints[id] = {
+        Target = pos,
+        TrafficLight = traffic,
+        FuelStation = fuelstation,
+        UseTurnLights = useturnlights,
+        WaitUntilNext = waituntilnext,
+        SpeedLimit = speedlimit,
+        Group = group,
+        Neighbors = neighbors,
+    }
 
-	net.Start "Decent Vehicle: Retrive waypoints"
-	net.WriteUInt(id + 1, 24)
-	net.SendToServer()
+    net.Start "Decent Vehicle: Retrive waypoints"
+    net.WriteUInt(id + 1, 24)
+    net.SendToServer()
 end)
 
 net.Receive("Decent Vehicle: Send waypoint info", function()
-	local id = net.ReadUInt(24)
-	local waypoint = dvd.Waypoints[id]
-	if not waypoint then return end
-	waypoint.Group = net.ReadUInt(16)
-	waypoint.SpeedLimit = net.ReadFloat()
-	waypoint.WaitUntilNext = net.ReadFloat()
-	waypoint.UseTurnLights = net.ReadBool()
-	waypoint.FuelStation = net.ReadBool()
+    local id = net.ReadUInt(24)
+    local waypoint = dvd.Waypoints[id]
+    if not waypoint then return end
+    waypoint.Group = net.ReadUInt(16)
+    waypoint.SpeedLimit = net.ReadFloat()
+    waypoint.WaitUntilNext = net.ReadFloat()
+    waypoint.UseTurnLights = net.ReadBool()
+    waypoint.FuelStation = net.ReadBool()
 end)
 
 net.Receive("Decent Vehicle: Clear waypoints", function()
-	table.Empty(dvd.Waypoints)
+    table.Empty(dvd.Waypoints)
 end)
 
 net.Receive("Decent Vehicle: Sync CVar", function()
-	hook.Run "Decent Vehicle: Sync CVar"
+    hook.Run "Decent Vehicle: Sync CVar"
 end)
 
 local FuelColor = Color(192, 128, 0)
@@ -221,94 +221,94 @@ local NumPolys = 192
 local AngleStep = 360 / NumPolys
 hook.Add("PostDrawTranslucentRenderables", "Decent Vehicle: Draw waypoints",
 function(bDrawingDepth, bDrawingSkybox)
-	local weapon = LocalPlayer():GetActiveWeapon()
-	if not IsValid(weapon) then return end
-	if not isfunction(LocalPlayer().GetTool) then return end
+    local weapon = LocalPlayer():GetActiveWeapon()
+    if not IsValid(weapon) then return end
+    if not isfunction(LocalPlayer().GetTool) then return end
 
-	local always = GetConVar "dv_route_showalways"
-	local showpoints = GetConVar "dv_route_showpoints"
-	local drawdistance = GetConVar "dv_route_drawdistance"
-	local distsqr = drawdistance and drawdistance:GetFloat()^2 or 1000^2
-	local size = dvd.WaypointSize
-	local TOOL = LocalPlayer():GetTool()
-	local ToolEquipped = weapon:GetClass() == "gmod_tool" and TOOL and TOOL.IsDecentVehicleTool
-	local MultiEdit = ToolEquipped and LocalPlayer():KeyDown(IN_USE)
-	local Trace = LocalPlayer():GetEyeTrace()
-	local UpdateRadius = GetConVar "dv_route_updateradius"
-	local Radius = UpdateRadius and UpdateRadius:GetInt() or 0
-	local RadiusSqr = Radius^2
-	if not (always:GetBool() or ToolEquipped) then return end
+    local always = GetConVar "dv_route_showalways"
+    local showpoints = GetConVar "dv_route_showpoints"
+    local drawdistance = GetConVar "dv_route_drawdistance"
+    local distsqr = drawdistance and drawdistance:GetFloat()^2 or 1000^2
+    local size = dvd.WaypointSize
+    local TOOL = LocalPlayer():GetTool()
+    local ToolEquipped = weapon:GetClass() == "gmod_tool" and TOOL and TOOL.IsDecentVehicleTool
+    local MultiEdit = ToolEquipped and LocalPlayer():KeyDown(IN_USE)
+    local Trace = LocalPlayer():GetEyeTrace()
+    local UpdateRadius = GetConVar "dv_route_updateradius"
+    local Radius = UpdateRadius and UpdateRadius:GetInt() or 0
+    local RadiusSqr = Radius^2
+    if not (always:GetBool() or ToolEquipped) then return end
 
-	if bDrawingSkybox or not (showpoints and showpoints:GetBool()) then return end
-	if MultiEdit then
-		render.SetMaterial(SelectRadiusMaterial)
-		render.StartBeam(NumPolys + 1)
-		local filter = player.GetAll()
-		local BaseNormal = Trace.HitNormal:Dot(vector_up) > .7 and Trace.HitNormal or vector_up
-		local TraceVector = BaseNormal * 32768
-		local BaseAngle = BaseNormal:Angle()
-		for i = 0, NumPolys do
-			local pos = Vector(0, Radius, 0)
-			pos:Rotate(Angle(0, 0, AngleStep * i))
+    if bDrawingSkybox or not (showpoints and showpoints:GetBool()) then return end
+    if MultiEdit then
+        render.SetMaterial(SelectRadiusMaterial)
+        render.StartBeam(NumPolys + 1)
+        local filter = player.GetAll()
+        local BaseNormal = Trace.HitNormal:Dot(vector_up) > .7 and Trace.HitNormal or vector_up
+        local TraceVector = BaseNormal * 32768
+        local BaseAngle = BaseNormal:Angle()
+        for i = 0, NumPolys do
+            local pos = Vector(0, Radius, 0)
+            pos:Rotate(Angle(0, 0, AngleStep * i))
 
-			local start = LocalToWorld(pos, angle_zero, Trace.HitPos, BaseAngle)
-			local tr = util.TraceLine {start = start, endpos = start + TraceVector, mask = MASK_SOLID_BRUSHONLY}
-			tr = util.TraceLine {start = tr.HitPos, endpos = tr.HitPos - TraceVector, mask = MASK_SOLID, filter = filter}
+            local start = LocalToWorld(pos, angle_zero, Trace.HitPos, BaseAngle)
+            local tr = util.TraceLine {start = start, endpos = start + TraceVector, mask = MASK_SOLID_BRUSHONLY}
+            tr = util.TraceLine {start = tr.HitPos, endpos = tr.HitPos - TraceVector, mask = MASK_SOLID, filter = filter}
 
-			render.AddBeam(tr.HitPos + BaseNormal, 10, i, SelectedColor)
-		end
+            render.AddBeam(tr.HitPos + BaseNormal, 10, i, SelectedColor)
+        end
 
-		render.EndBeam()
-	end
+        render.EndBeam()
+    end
 
-	for _, w in ipairs(dvd.Waypoints) do
-		if w.Target:DistToSqr(EyePos()) > distsqr then continue end
-		local visible = EyeAngles():Forward():Dot(w.Target - EyePos()) > 0
-		if visible then
-			local color = w.FuelStation and FuelColor or color_white
-			if MultiEdit and Trace.HitPos:DistToSqr(w.Target) < RadiusSqr then
-				color = SelectedColor
-			end
+    for _, w in ipairs(dvd.Waypoints) do
+        if w.Target:DistToSqr(EyePos()) > distsqr then continue end
+        local visible = EyeAngles():Forward():Dot(w.Target - EyePos()) > 0
+        if visible then
+            local color = w.FuelStation and FuelColor or color_white
+            if MultiEdit and Trace.HitPos:DistToSqr(w.Target) < RadiusSqr then
+                color = SelectedColor
+            end
 
-			render.SetMaterial(WaypointMaterial)
-			render.DrawSprite(w.Target + Height, size, size, color)
-			if w.UseTurnLights then
-				render.SetMaterial(UseTurnLightsMaterial)
-				render.DrawSprite(w.Target + Height, size, size, color_white)
-			end
-		end
+            render.SetMaterial(WaypointMaterial)
+            render.DrawSprite(w.Target + Height, size, size, color)
+            if w.UseTurnLights then
+                render.SetMaterial(UseTurnLightsMaterial)
+                render.DrawSprite(w.Target + Height, size, size, color_white)
+            end
+        end
 
-		render.SetMaterial(LinkMaterial)
-		for _, link in ipairs(w.Neighbors) do
-			local n = dvd.Waypoints[link]
-			if n and (visible or EyeAngles():Forward():Dot(n.Target - EyePos()) > 0) then
-				local pos = n.Target
-				local tex = w.Target:Distance(pos) / 100
-				local texbase = 1 - CurTime() % 1
-				render.DrawBeam(w.Target + Height, pos + Height, 20, texbase, texbase + tex, color_white)
-			end
-		end
+        render.SetMaterial(LinkMaterial)
+        for _, link in ipairs(w.Neighbors) do
+            local n = dvd.Waypoints[link]
+            if n and (visible or EyeAngles():Forward():Dot(n.Target - EyePos()) > 0) then
+                local pos = n.Target
+                local tex = w.Target:Distance(pos) / 100
+                local texbase = 1 - CurTime() % 1
+                render.DrawBeam(w.Target + Height, pos + Height, 20, texbase, texbase + tex, color_white)
+            end
+        end
 
-		if IsValid(w.TrafficLight) then
-			local pos = w.TrafficLight:GetPos()
-			if visible or EyeAngles():Forward():Dot(pos - EyePos()) > 0 then
-				local tex = w.Target:Distance(pos) / 100
-				render.SetMaterial(TrafficMaterial)
-				render.DrawBeam(w.Target + Height, pos, 20, 0, tex, color_white)
-			end
-		end
-	end
+        if IsValid(w.TrafficLight) then
+            local pos = w.TrafficLight:GetPos()
+            if visible or EyeAngles():Forward():Dot(pos - EyePos()) > 0 then
+                local tex = w.Target:Distance(pos) / 100
+                render.SetMaterial(TrafficMaterial)
+                render.DrawBeam(w.Target + Height, pos, 20, 0, tex, color_white)
+            end
+        end
+    end
 
-	render.SetMaterial(TrafficMaterial)
-	for m in pairs(dvd.WireManagers) do
-		local i = m:GetNWInt "WaypointID"
-		if i < 0 then continue end
-		local w = dvd.Waypoints[i]
-		if not w then continue end
-		local pos = w.Target + Height
-		local tex = m:GetPos():Distance(pos) / 100
-		render.DrawBeam(m:GetPos(), pos, 20, 0, tex, color_white)
-	end
+    render.SetMaterial(TrafficMaterial)
+    for m in pairs(dvd.WireManagers) do
+        local i = m:GetNWInt "WaypointID"
+        if i < 0 then continue end
+        local w = dvd.Waypoints[i]
+        if not w then continue end
+        local pos = w.Target + Height
+        local tex = m:GetPos():Distance(pos) / 100
+        render.DrawBeam(m:GetPos(), pos, 20, 0, tex, color_white)
+    end
 end)
 
 hook.Run "Decent Vehicle: PostInitialize"
