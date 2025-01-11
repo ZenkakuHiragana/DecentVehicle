@@ -21,36 +21,20 @@ local dvd = DecentVehicleDestination
 local function NotifyUpdate(d)
     if not d then return end
     -- local header = d.description:match(dvd.Texts.VersionPrefix .. "[^%c]+") or ""
-    local header = d.description:match "Version[^%c]+" or ""
-    dvd.Texts.Version = "Decent Vehicle: " .. header
-
+    local header = d.description:match "Version%s*:?%s+%d+[^%d]%d+[^%d]%d+" or ""
     local showupdates = GetConVar "dv_route_showupdates"
     if not (showupdates and showupdates:GetBool()) then return end
-
     if not file.Exists("decentvehicle", "DATA") then file.CreateDir "decentvehicle" end
     local versionfile = "decentvehicle/version.txt"
-    local checkedversion = string.Explode(".", file.Read(versionfile) or "0.0.0")
-    local version = string.Explode(".", header:sub(8):Trim())
+    local checkedversion = (file.Read(versionfile) or "0.0.0"):Split "."
+    local version = { header:match "(%d+)[^%d](%d+)[^%d](%d+)" }
+    dvd.Texts.Version = "Decent Vehicle: " .. header
     if tonumber(checkedversion[1]) > 1e8 then checkedversion = {} end -- Backward compatibility
     if CompareVersion(dvd.Version, version) then
-        notification.AddLegacy(dvd.Texts.OldVersionNotify, NOTIFY_ERROR, 15)
+        notification.AddLegacy(dvd.Texts.OldVersionNotify, NOTIFY_ERROR, 10)
     elseif CompareVersion(checkedversion, dvd.Version) then
-        local i = 0
-        local sub = d.description:find "quote=Decent Vehicle"
-        if not sub then return end
-        local description = d.description:sub(1, sub - 2)
-        notification.AddLegacy("Decent Vehicle " .. header, NOTIFY_GENERIC, 18)
-        for update in description:gmatch "%[%*%][^%c]+" do
-            timer.Simple(3 * i, function()
-                if not showupdates:GetBool() then return end
-                notification.AddLegacy(update:sub(4), NOTIFY_UNDO, 6)
-            end)
-
-            i = i + 1
-        end
-
-        file.Write(versionfile, string.format("%d.%d.%d",
-        dvd.Version[1], dvd.Version[2], dvd.Version[3]))
+        notification.AddLegacy("Decent Vehicle " .. header, NOTIFY_GENERIC, 8)
+        file.Write(versionfile, string.format("%d.%d.%d", unpack(dvd.Version)))
     end
 end
 
