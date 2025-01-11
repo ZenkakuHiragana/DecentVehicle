@@ -355,7 +355,7 @@ function ENT:AttachModel()
 		self:SetNWAngle("Ang", seatang)
 		self:SetSequence(anim)
 
-		for i = 1, self:GetFlexNum() do
+		for i = 0, self:GetFlexNum() - 1 do
 			self:SetFlexWeight(i, self:GetFlexBounds(i))
 		end
 	end)
