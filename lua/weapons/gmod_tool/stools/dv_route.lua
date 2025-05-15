@@ -4,6 +4,9 @@
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
 AddCSLuaFile()
+
+---@class TOOL.DVRoute : Structure.TOOL, TOOL
+local TOOL = TOOL
 local dvd = DecentVehicleDestination
 local texts = dvd.Texts.Tools
 
@@ -49,14 +52,15 @@ function TOOL:LeftClick(trace)
     local wait = self:GetClientNumber "wait"
     local pos = trace.HitPos
     local waypoint, waypointID = dvd.GetNearestWaypoint(pos, dvd.WaypointSize)
-    if IsValid(trace.Entity) then
-        if trace.Entity.IsDVTrafficLight then
-            self.TrafficLight = trace.Entity
+    local ent = trace.Entity
+    if IsValid(ent) then ---@cast ent ENT.TrafficLight|ENT.DecentVehicle
+        if ent.IsDVTrafficLight then
+            self.TrafficLight = ent
             self.WaypointID = -1
             self:SetStage(1)
             return true
-        elseif trace.Entity.DecentVehicle then
-            trace.Entity.DecentVehicle.Group = group
+        elseif ent.DecentVehicle then
+            ent.DecentVehicle.Group = group
             return true
         end
     end

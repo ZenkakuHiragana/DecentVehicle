@@ -3,7 +3,8 @@
 -- written by ∩(≡＾ω＾≡)∩ (https://steamcommunity.com/id/greatzenkakuman/)
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
-local dvd = DecentVehicleDestination
+local ENT = ENT ---@class ENT.DecentVehicle
+local dvd = DecentVehicleDestination ---@class dvd
 local FakeViewOffset = vector_up * 32
 local function FakeEyeTrace(self)
     return util.QuickTrace(self:GetPos(), self:GetVehicleForward() * 16384, self)
@@ -91,7 +92,6 @@ function ENT:GetWeaponColor() return Vector(1, 1, 1) end
 function ENT:GetWeapons() return {} end
 function ENT:HasGodMode() return false end
 function ENT:HasWeapon() return false end
-function ENT:InVehicle() return true end
 function ENT:IsAdmin() return false end
 function ENT:IsBot() return true end
 function ENT:PlayerEnteredSCar() end -- For SCAR base
@@ -165,7 +165,7 @@ function ENT:TranslateWeaponActivity() return ACT_INVALID end
 function ENT:UnfreezePhysicsObjects() end
 function ENT:UniqueID() return self:EntIndex() end
 function ENT:UniqueIDTable(key)
-    self.UniqueTable = self.UniqueTable or {}
+    self.UniqueTable = self.UniqueTable or {} ---@type table<any, table>
     self.UniqueTable[key] = self.UniqueTable[key] or {}
     return self.UniqueTable[key]
 end
@@ -299,13 +299,13 @@ function ENT:UnSpectate() end
 if Photon then
     function ENT:IsBraking()
         local dv = self.DecentVehicle
-        if not IsValid(dv) then return false end
+        if not IsValid(dv) then return false end ---@cast dv -?
         return dv.HandBrake
     end
 
     function ENT:IsReversing()
         local dv = self.DecentVehicle
-        if not IsValid(dv) then return false end
+        if not IsValid(dv) then return false end ---@cast dv -?
         return dv.Throttle < 0 and self:GetVelocity():Dot(dv:GetVehicleForward()) < 0
     end
 end
@@ -375,7 +375,7 @@ do -- Patches for Realistic bikes from CeiLciuZ
     end
 end
 
-local vehiclemeta = FindMetaTable "Vehicle"
+local vehiclemeta = FindMetaTable "Vehicle" ---@cast vehiclemeta -?
 local GetDriver = vehiclemeta.GetDriver
 if not dvd or dvd.HasChangedVehicleMeta then return end
 

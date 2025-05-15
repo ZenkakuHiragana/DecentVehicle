@@ -2,6 +2,11 @@
 local dvd = DecentVehicleDestination
 
 AddCSLuaFile()
+
+---@class ENT.TaxiDriver : ENT.DecentVehicle
+---@field BaseClass ENT.DecentVehicle
+---@field Destinations Vector[]
+local ENT = ENT
 ENT.Base = "npc_decentvehicle"
 ENT.PrintName = dvd.Texts.npc_dvtaxi
 ENT.Coming = false
@@ -9,6 +14,7 @@ ENT.Transporting = false
 ENT.Model = "models/player/odessa.mdl"
 ENT.IsDVTaxiDriver = true
 ENT.WaitForCaller = false
+ENT.Fare = 0
 
 list.Set("NPC", "npc_dvtaxi", {
     Name = ENT.PrintName,
@@ -31,14 +37,16 @@ function ENT:Think()
             net.WriteUInt(5, 4) -- The passenger got off the taxi
             net.Send(self.Caller)
             if engine.ActiveGamemode() == "darkrp" then
-                self.Caller:ChatPrint(dvd.Texts.Taxi.Fare:format(self.Fare))
-                self.Caller:setDarkRPVar("money", math.max(self.Caller.DarkRPVars.money - self.Fare, 0))
+                local texts = dvd.Texts.Taxi
+                local caller = self.Caller ---@cast caller Player
+                caller:ChatPrint(texts.Fare:format(self.Fare))
+                caller:setDarkRPVar("money", math.max(caller.DarkRPVars.money - self.Fare, 0))
             end
 
             local seats = self.v:GetChildren()
             if self.v.IsScar then seats = self.v.Seats end
             for i, s in ipairs(seats) do
-                if not (IsValid(s) and s:IsVehicle()) then continue end
+                if not (IsValid(s) and s:IsVehicle()) then continue end ---@cast s Vehicle
                 if self.v.IsScar and not s.IsScarSeat then continue end
                 local p = s:GetDriver()
                 if IsValid(p) and p:IsPlayer() and self.Caller ~= p then
@@ -49,7 +57,7 @@ function ENT:Think()
                     net.WriteEntity(self)
                     net.Send(p)
                     self.Caller = p
-                    self.ClearMemory = nil
+                    self.ClearMemory = nil ---@type nil
                     self.Coming = false
                     self.Transporting = false
                     self.WaitForCaller = true
@@ -59,11 +67,11 @@ function ENT:Think()
         end
 
         self.Caller = nil
-        self.ClearMemory = nil
+        self.ClearMemory = nil ---@type nil
         self.Coming = false
         self.Transporting = false
         self.WaitForCaller = nil
-        self.WaypointList = {}
+        self.WaypointList = {} ---@type dv.Waypoint[]
     end
 
     return true

@@ -3,6 +3,11 @@
 local dvd = DecentVehicleDestination
 
 AddCSLuaFile()
+
+---@class ENT.LearningVehicle : ENT.DecentVehicle
+---@field BaseClass ENT.DecentVehicle
+local ENT = ENT
+
 ENT.Base = "npc_decentvehicle"
 ENT.PrintName = "Learning Vehicle (β)"
 ENT.IsLearningVehicle = true -- Adding your identifier will be good.

@@ -7,6 +7,7 @@ AddCSLuaFile "cl_init.lua"
 AddCSLuaFile "shared.lua"
 include "shared.lua"
 
+local ENT = ENT ---@class ENT.TrafficLight
 local dvd = DecentVehicleDestination
 local lr = "decentvehicle/trafficlight/lr"
 local ly = "decentvehicle/trafficlight/ly"
@@ -33,7 +34,7 @@ function ENT:Initialize()
     self:SetNWInt("DVTL_LightColor", 1)
     self:SetPattern(1)
 
-    self.Waypoints = {}
+    self.Waypoints = {} ---@type dv.Waypoint[]
 end
 
 function ENT:SpawnFunction(ply, tr, ClassName)

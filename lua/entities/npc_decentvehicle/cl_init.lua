@@ -6,7 +6,7 @@
 include "shared.lua"
 include "playermeta.lua"
 
-local dvd = DecentVehicleDestination
+local ENT = ENT ---@class ENT.DecentVehicle
 function ENT:Think()
     self:SetDriverPosition()
     self:SetSequence(self:GetNWInt "Sequence")

@@ -7,15 +7,19 @@ local dvd = DecentVehicleDestination
 if not dvd then return end
 
 net.Receive("Decent Vehicle: Open a taxi menu", function()
-    local st = net.ReadEntity()
+    local st = net.ReadEntity() ---@cast st ENT.TaxiStation
     local DFrame = vgui.Create "DFrame"
-    local stations = {}
+    local stations = {} ---@type table<string, true>
     for k, v in ipairs(ents.GetAll()) do
+        ---@cast v ENT.TaxiStation
         if not v.IsDVTaxiStation then continue end
         local name = v:GetStationName()
         if st.IsDVTaxiStation and name == st:GetStationName() then continue end
         stations[name] = true
     end
+
+    ---@class DFrame
+    ---@field Called boolean Injected by Decent Vehicle Taxi Station
 
     DFrame:SetTitle "DV Taxi"
     DFrame:Center()

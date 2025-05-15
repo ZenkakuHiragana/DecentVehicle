@@ -4,6 +4,9 @@
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
 AddCSLuaFile()
+
+---@class ENT.DVSave : Structure.ENT, Entity, ENTITY
+local ENT = ENT
 ENT.Type = "point"
 local dvd = DecentVehicleDestination
 function ENT:Initialize()

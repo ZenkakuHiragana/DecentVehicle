@@ -6,6 +6,14 @@
 if not WireLib then return end
 AddCSLuaFile()
 DEFINE_BASECLASS "base_wire_entity"
+
+---@class ENT.DVWireManager : Structure.ENT, Entity, ENTITY
+---@field BaseClass ENTITY
+---@field Inputs table
+---@field Outputs table
+---@field SetOverlayText fun(self: ENT.DVWireManager, value: string)
+local ENT = ENT
+
 ENT.WireDebugName = "[DV] Waypoint Manager"
 ENT.PrintName = "[DV] Waypoint Manager"
 ENT.Author = "∩(≡＾ω＾≡)∩"

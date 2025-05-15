@@ -1,11 +1,20 @@
 
+---@class dvd
+---@field DVPolice_WantedTable table<Entity, true>
+
 local dvd = DecentVehicleDestination
 if not dvd then return end
 dvd.DVPolice_WantedTable = {} -- global table of wanted vehicles
 
 AddCSLuaFile()
+
+---@class ENT.DVPolice : ENT.DecentVehicle
+---@field BaseClass ENT.DecentVehicle
+local ENT = ENT
+
 ENT.Base = "npc_decentvehicle"
 ENT.PrintName = dvd.Texts.npc_dvpolice
+ENT.StopHere = nil ---@type dv.Waypoint
 ENT.DV_Police = true -- Adding your identifier will be good.
 ENT.Model = {
     "models/player/police.mdl",
@@ -29,24 +38,21 @@ ENT.Preference = { -- Some preferences for the behavior of the base AI.
     WaitUntilNext = true, -- Whether or not it waits on WaitUntilNext
 }
 
--- list.Set("NPC", "npc_dvpolice", {
---     Name = ENT.PrintName,
---     Class = "npc_dvpolice",
---     Category = "GreatZenkakuMan's NPCs",
--- })
+list.Set("NPC", "npc_dvpolice", {
+    Name = ENT.PrintName,
+    Class = "npc_dvpolice",
+    Category = "GreatZenkakuMan's NPCs",
+})
 
 if CLIENT then return end
 local color_green = Color(0, 255, 0)
 local ChangeCode = dvd.CVars.Police.ChangeCode
 
---[[
-arguments:
-1: Entity ent - entity to check
-2: boolean turn(optional) - if true, then generate new waypoint and generate new route, else only generate new route
-]]
+---@param ent Entity entity to check
+---@param turn boolean? if true, then generate new waypoint and generate new route, else only generate new route
 function ENT:DVPolice_GenerateWaypoint(ent, turn)
     turn = turn or false
-    assert(IsEntity(ent), string.format("Entity expected, got %s.", tostring(ent)))
+    assert(isentity(ent), string.format("Entity expected, got %s.", tostring(ent)))
     assert(isbool(turn), string.format("Bool expected, got %s.", tostring(turn)))
 
     local move_ok = self:GetMoveDirection(ent)
@@ -64,12 +70,13 @@ function ENT:DVPolice_GenerateWaypoint(ent, turn)
         debugoverlay.Sphere(self.Waypoint.Target, 50, 1, color_green, true)
     end
 
-    if not table.HasValue(self.WaypointList,tg_nearest) then
+    if tg_nearest and not table.HasValue(self.WaypointList, tg_nearest) then
         table.insert(self.WaypointList, tg_nearest)
         debugoverlay.Sphere(tg_nearest.Target, 30, 1, color_green, true)
     end
 
     timer.Simple(.2, function() -- idk why, but first it need to wait before get route
+        if not IsValid(self) then return end
         if not self.PreferencesSetUpped then
             self.Preference.StopAtTL = false -- don't stop at traffic light
             self.Preference.GiveWay = false -- don't give way
@@ -126,7 +133,7 @@ function ENT:ShouldStop()
             return false
         elseif self:TargetStopped() then
             self:SetELSSound(false)
-            if not self.ChangedCode and VC
+            if not self.DVPolice_ChangedCode and VC
             and isfunction(VC.ELS_Lht_SetCode) then
                 if dvd.DriveSide == dvd.DRIVESIDE_RIGHT then -- if drive side right
                     VC.ELS_Lht_SetCode(self.v, nil, nil, 10)
@@ -155,29 +162,25 @@ function ENT:ShouldStop()
     return self.BaseClass.ShouldStop(self)
 end
 
---[[
-Determines is line in left/right(depends of driving side) = opposite line
-
-retruns - boolean is opposite, if not exsits neighbor then returns nil
-table foundwp - waypoint with that was checked
-Vector wpside - position from what was checked
-Vector back - position from what was 100% checked
-table neighbor - foundwp's neighbor that was used for checking too
-]]
+---Determines if line is in left/right (depends of driving side) = opposite line
+---@return boolean? # is opposite, if not exsits neighbor then returns nil
+---@return table? foundwp waypoint with that was checked
+---@return Vector? wpside position from what was checked
+---@return Vector? back position from what was 100% checked
+---@return dv.Waypoint? neighbor foundwp's neighbor that was used for checking too
 function ENT:GetOppositeLine()
     local is_opposite = false
 
-    local wpside
-    local foundwp
-
+    local wpside ---@type Vector
     if dvd.DriveSide == dvd.DRIVESIDE_RIGHT then -- if drive side right
-        wpside = self:LocalToWorld(Vector(0, 250, 0), Angle(0, 0, 0))
+        wpside = self:LocalToWorld(Vector(0, 250, 0))
     else
-        wpside = self:LocalToWorld(Vector(0, -300, 0), Angle(0, 0, 0))
+        wpside = self:LocalToWorld(Vector(0, -300, 0))
     end
 
-    foundwp = dvd.GetNearestWaypoint(wpside)
-    local back = self:LocalToWorld(Vector(-400, 0, 0), Angle(0, 0, 0))
+    local foundwp = dvd.GetNearestWaypoint(wpside)
+    if not foundwp then return end
+    local back = self:LocalToWorld(Vector(-400, 0, 0))
     debugoverlay.Line(self.v:GetPos(), wpside, .05, Color(0, 0, 255), true)
     debugoverlay.Line(self.v:GetPos(), back, .05, Color(0, 0, 255), true)
     debugoverlay.Sphere(foundwp.Target, 64, .1, Color(0, 0, 255, 100), true)
@@ -195,26 +198,20 @@ end
 function ENT:CarCollide(data)
     if data.Speed < 200 or not data.HitEntity:IsVehicle() then return end
     local TimeToStopEmergency = GetConVar "decentvehicle_timetostopemergency"
-    self.Emergency = CurTime() + (self.EmergencyDuration or TimeToStopEmergency:GetFloat())
+    self.Emergency = CurTime() + (self.Emergency or TimeToStopEmergency:GetFloat())
 end
 
---[[
-Determines move direction of given entity
-
-arguments:
-1: Entity ent - entity to check
-
-returns:
-1: boolean - true - driving on it's lane, false - driving on the opposite lane, nil - no vehicle
-]]
-
+---Determines move direction of given entity
+---@param ent Entity entity to check
+---@return boolean # true - driving on it's lane, false - driving on the opposite lane, nil - no vehicle
 function ENT:GetMoveDirection(ent)
-    assert(IsEntity(ent), string.format("Entity expected, got %s.", tostring(ent)))
+    assert(isentity(ent), string.format("Entity expected, got %s.", tostring(ent)))
     assert(ent:IsVehicle(), string.format("Trying call 'GetMoveDirection' to not vehicle. Got: %s.", tostring(ent)))
     assert(ent:GetClass() ~= "prop_vehicle_prisoner_pod", string.format("Trying call 'GetMoveDirection' to seat. Got: %s.", tostring(ent)))
     local is_opposite, foundedwp, lookside, lookback, neighbor = self:GetOppositeLine()
-    local move_ok, attposf, attposr
-    if ent.IsSimfphyscar then
+    local move_ok, attposf, attposr ---@type boolean, Vector, Vector
+    ---@cast ent dv.Vehicle
+    if ent.IsSimfphyscar then ---@cast ent dv.Simfphys
         if not ent.CustomWheels then
             attposf = ent:GetAttachment(ent:LookupAttachment "wheel_fl").Pos
             attposr = ent:GetAttachment(ent:LookupAttachment "wheel_rl").Pos
@@ -223,16 +220,16 @@ function ENT:GetMoveDirection(ent)
             attposf = wheels[1]:GetPos()
             attposr = wheels[3]:GetPos()
         end
-    elseif ent.IsScar then
+    elseif ent.IsScar then ---@cast ent dv.SCAR
         local wheels = ent.Wheels
         attposf = wheels[1]:GetPos()
         attposr = wheels[3]:GetPos()
-    elseif ent:GetClass() == "prop_vehicle_jeep" then
+    elseif ent:GetClass() == "prop_vehicle_jeep" then ---@cast ent Vehicle
         attposf = ent:GetAttachment(ent:LookupAttachment "wheel_fl").Pos
         attposr = ent:GetAttachment(ent:LookupAttachment "wheel_rl").Pos
     end
 
-    if is_opposite then
+    if is_opposite and lookside and neighbor then
         for k, v in pairs(ents.FindInSphere(lookside, 175)) do
             debugoverlay.Sphere(lookside, 175, .1, Color(200, 10, 255, 1), true)
             if v ~= ent then continue end
@@ -270,13 +267,13 @@ function ENT:Think()
     if not IsValid(self.DVPolice_Target) then -- if we don't have target
         if not self.Waypoint then
             self.WaypointList = {}
-            self.NextWaypoint = nil
+            self.NextWaypoint = nil ---@type nil
             self:FindFirstWaypoint()
         end
 
         if self:GetELS() then -- and ELS enabled
             self.WaypointList = {}
-            self.NextWaypoint = nil
+            self.NextWaypoint = nil ---@type nil
             self:FindFirstWaypoint()
             self:SetELS(false) -- then disable it
             self:SetELSSound(false) -- and it

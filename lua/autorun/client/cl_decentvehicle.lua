@@ -78,7 +78,7 @@ end)
 
 net.Receive("Decent Vehicle: Traffic light", function()
     local id = net.ReadUInt(24)
-    local traffic = net.ReadEntity()
+    local traffic = net.ReadEntity() ---@cast traffic ENT.TrafficLight
     if not dvd.Waypoints[id] then return end
     dvd.Waypoints[id].TrafficLight = Either(IsValid(traffic), traffic, nil)
 end)
@@ -145,8 +145,7 @@ net.Receive("Decent Vehicle: Retrive waypoints", function()
     local id = net.ReadUInt(24)
     if id < 1 then return end
     local pos = net.ReadVector()
-    local traffic = net.ReadEntity()
-    if not IsValid(traffic) then traffic = nil end
+    local traffic = net.ReadEntity() ---@cast traffic ENT.TrafficLight
     local fuelstation = net.ReadBool()
     local useturnlights = net.ReadBool()
     local waituntilnext = net.ReadFloat()
@@ -160,13 +159,14 @@ net.Receive("Decent Vehicle: Retrive waypoints", function()
 
     dvd.Waypoints[id] = {
         Target = pos,
-        TrafficLight = traffic,
+        TrafficLight = IsValid(traffic) and traffic or nil,
         FuelStation = fuelstation,
         UseTurnLights = useturnlights,
         WaitUntilNext = waituntilnext,
         SpeedLimit = speedlimit,
         Group = group,
         Neighbors = neighbors,
+        Time = CurTime(),
     }
 
     net.Start "Decent Vehicle: Retrive waypoints"

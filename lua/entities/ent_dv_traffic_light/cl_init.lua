@@ -5,6 +5,7 @@
 
 include "shared.lua"
 
+local ENT = ENT ---@class ENT.TrafficLight
 local material = Material "sprites/light_ignorez"
 local Colors = {Color(0, 255, 0), Color(255, 191, 0), Color(255, 0, 0)}
 local SpritePos = {-11.2, 0, 11.2}

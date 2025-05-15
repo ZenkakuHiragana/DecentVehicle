@@ -3,33 +3,40 @@
 -- written by ∩(≡＾ω＾≡)∩ (https://steamcommunity.com/id/greatzenkakuman/)
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
+---@class dvd
 local dvd = DecentVehicleDestination
 if not dvd then return end
 local UnitPrice = dvd.CVars.Taxi.UnitPrice
 
-dvd.TaxiDrivers = dvd.TaxiDrivers or {}
-dvd.TaxiStations = dvd.TaxiStations or {}
+dvd.TaxiDrivers = dvd.TaxiDrivers or {} ---@type table<ENT.TaxiDriver, true>
+dvd.TaxiStations = dvd.TaxiStations or {} ---@type table<ENT.TaxiStation, true>
+
+---@param seat dv.Vehicle
+---@return ENT.DecentVehicle?
 local function GetDriver(seat)
+    local driver ---@type Entity
     if seat.DecentVehicle then return seat.DecentVehicle end
-    if seat.IsScarSeat then
-        seat = seat.EntOwner
+    if seat.IsScarSeat then ---@cast seat dv.SCAR
+        driver = seat.EntOwner
     elseif IsValid(seat:GetParent()) then
-        seat = seat:GetParent()
+        driver = seat:GetParent()
     else
-        for e in pairs(constraint.GetAllConstrainedEntities(seat)) do
+        for _, e in ipairs(constraint.GetAllConstrainedEntities(seat)) do
             if e.DecentVehicle then
-                seat = e
+                driver = e
                 break
             end
         end
     end
 
-    if not (IsValid(seat) and seat:IsVehicle()) then return end
-    return seat.DecentVehicle
+    if not (IsValid(driver) and driver:IsVehicle()) then return end
+    return driver.DecentVehicle
 end
 
+---@param pos Vector
+---@return ENT.TaxiDriver?
 local function GetNearestTaxiDriver(pos)
-    local mindistance, taxidriver = math.huge
+    local mindistance, taxidriver = math.huge, nil
     for driver in pairs(dvd.TaxiDrivers) do
         local distance = driver:GetPos():DistToSqr(pos)
         if not (IsValid(driver) and driver.IsDVTaxiDriver) then continue end
@@ -41,6 +48,9 @@ local function GetNearestTaxiDriver(pos)
     return taxidriver
 end
 
+---@param ply Player
+---@param ent Entity
+---@param dv ENT.TaxiDriver
 local function StartGoing(ply, ent, dv)
     local route = dvd.GetRouteVector(ent:GetPos(), dv.Destinations)
     if not route or #route == 0 then return end
@@ -83,7 +93,9 @@ util.AddNetworkString "Decent Vehicle: The taxi driver says something localized"
 net.Receive("Decent Vehicle: Call a taxi", function(_, ply)
     local destination = net.ReadString()
     local ent = net.ReadEntity()
+    ---@cast ent ENT.TaxiStation
     local beginning = ent.IsDVTaxiStation and ent:GetStationName()
+    ---@cast ent ENT.TaxiDriver
     local dv = ent.IsDVTaxiDriver and ent or GetNearestTaxiDriver(ply:GetPos())
 
     if not dv then
@@ -110,8 +122,8 @@ net.Receive("Decent Vehicle: Call a taxi", function(_, ply)
 
     dv.Destinations = goingto
     if beginning then
-        dv.WaypointList = route
-        dv.Waypoint, dv.NextWaypoint = nil
+        dv.WaypointList = route or {}
+        dv.Waypoint, dv.NextWaypoint = nil, nil
         dv.Caller = ply
         dv.Coming = true
         dv.Transporting = false
@@ -133,22 +145,27 @@ net.Receive("Decent Vehicle: Exit vehicle", function(_, ply)
 end)
 
 hook.Add("Decent Vehicle: OnSaveWaypoints", "Save taxi stations", function(save)
+    ---@class dv.Save
+    ---@field TaxiStations dv.Save.TaxiStationInfo[]
     save.TaxiStations = {}
     for t in pairs(dvd.TaxiStations) do
         if not (IsValid(t) and t.IsDVTaxiStation) then continue end
-        table.insert(save.TaxiStations, {
+        ---@class dv.Save.TaxiStationInfo
+        local data = {
             Name = t:GetStationName(),
             Pos = t:GetPos(),
             Ang = t:GetAngles(),
             ClassName = t:GetClass(),
-        })
+        }
+        table.insert(save.TaxiStations, data)
     end
 end)
 
 hook.Add("Decent Vehicle: OnLoadWaypoints", "Load taxi stations", function(source)
+    ---@cast source dv.Save
     if not source.TaxiStations then return end
     for i, t in ipairs(source.TaxiStations) do
-        local station = ents.Create(t.ClassName)
+        local station = ents.Create(t.ClassName) ---@cast station ENT.TaxiStation
         if not IsValid(station) then continue end
         station:SetPos(t.Pos)
         station:SetAngles(t.Ang)
@@ -178,7 +195,7 @@ hook.Add("Decent Vehicle: OnReachedWaypoint", "Taxi reaches", function(self)
 end)
 
 hook.Add("PlayerEnteredVehicle", "Decent Vehicle: Player entered a taxi", function(ply, seat, role)
-    local dv = GetDriver(seat)
+    local dv = GetDriver(seat) ---@cast dv ENT.TaxiDriver
     if not (dv and dv.IsDVTaxiDriver) then return end
     if not dv.Caller then
         net.Start "Decent Vehicle: The taxi driver says something localized"
@@ -203,7 +220,7 @@ hook.Add("PlayerEnteredVehicle", "Decent Vehicle: Player entered a taxi", functi
 end)
 
 hook.Add("PlayerLeaveVehicle", "Decent Vehicle: Player left a taxi", function(ply, seat)
-    local dv = GetDriver(seat)
+    local dv = GetDriver(seat) ---@cast dv ENT.TaxiDriver
     if not (dv and dv.IsDVTaxiDriver) then return end
     if ply ~= dv.Caller then return end
     dv.ClearMemory = CurTime() + 0.1

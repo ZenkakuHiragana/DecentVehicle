@@ -1,6 +1,8 @@
 WireToolSetup.setCategory( "Other" )
 WireToolSetup.open( "dv_wiremanager", "Waypoint Manager", "gmod_wire_dvmanager", nil, "Waypoint Managers" )
 
+---@class TOOL.DVWire : Structure.TOOL, TOOL
+local TOOL = TOOL
 local dvd = DecentVehicleDestination
 if CLIENT then
     language.Add( "Tool.wire_dv_wiremanager.name", dvd.Texts.WireSupport.ToolName)

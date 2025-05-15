@@ -3,6 +3,11 @@
 -- written by ∩(≡＾ω＾≡)∩ (https://steamcommunity.com/id/greatzenkakuman/)
 -- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
 
+---@class ENT.TrafficLight : Structure.ENT, Entity, ENTITY
+---@field GetPattern fun(self: ENT.TrafficLight): integer
+---@field SetPattern fun(self: ENT.TrafficLight, value: integer)
+local ENT = ENT
+
 ENT.Type = "anim"
 ENT.PrintName = "Traffic Light"
 ENT.Category = "Decent Vehicle"
