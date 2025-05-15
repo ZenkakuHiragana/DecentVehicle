@@ -17,14 +17,15 @@ local ENT = ENT ---@class ENT.DecentVehicle
 -- Because of this, I have to do some workaround.
 local CorrectFindInSphere = ents.FindInSphere
 local HasFixedOnLocalizedPhysics = false
-local VCModFixedAroundNPCDriver = false -- This is a stupid solution.
-for _, a in ipairs(engine.GetAddons()) do
-    if tonumber(a.wsid) == 531849338 then
-        CorrectFindInSphere = ENT.RealFindInSphere or CorrectFindInSphere
-        if not ENT.RealFindInSphere then -- Just to make sure
-            timer.Simple(1, function()
-                CorrectFindInSphere = ENT.RealFindInSphere or CorrectFindInSphere
-            end)
+if not HasFixedOnLocalizedPhysics then
+    for _, a in ipairs(engine.GetAddons()) do
+        if tonumber(a.wsid) == 531849338 then
+            CorrectFindInSphere = ENT.RealFindInSphere or CorrectFindInSphere
+            if not ENT.RealFindInSphere then -- Just to make sure
+                timer.Simple(1, function()
+                    CorrectFindInSphere = ENT.RealFindInSphere or CorrectFindInSphere
+                end)
+            end
         end
     end
 end
@@ -353,7 +354,8 @@ function ENT:AttachModel()
     end
 
     if not IsValid(seat) then return end
-    local anim = dvd.DriverAnimation[self:GetVehicleIdentifier()] or dvd.DriverAnimation[self:GetVehiclePrefix()] or "drive_jeep"
+    local anim = dvd.DriverAnimation[self:GetVehicleIdentifier()]
+              or dvd.DriverAnimation[self:GetVehiclePrefix()] or "drive_jeep"
     local model = dvd.DefaultDriverModel[math.random(#dvd.DefaultDriverModel)]
     if istable(self.Model) then
         model = self.Model[math.random(#self.Model)]
@@ -383,21 +385,6 @@ function ENT:AttachModel()
             self:SetFlexWeight(i, self:GetFlexBounds(i))
         end
     end)
-end
-
----@return boolean
-function ENT:IsDestroyed()
-    local v = self.v
-    if v:IsFlagSet(FL_DISSOLVING) then return true end
-    if v.IsScar then ---@cast v dv.SCAR
-        return v:IsDestroyed()
-    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
-        return v:GetCurHealth() <= 0
-    elseif isfunction(v.VC_getHealth) then ---@cast v Vehicle
-        local health = v:VC_getHealth(false)
-        return isnumber(health) and health <= 0
-    end
-    return false
 end
 
 ---@return number
@@ -474,32 +461,6 @@ function ENT:ShouldStop()
     if self.Preference.StopInfrontofPerson and CurTime() > self.StopByTrace
     and CurTime() < self.StopByTrace + GobackTime then return true end
     if self.Preference.StopAtTL and self:AtTrafficLight() then return true end
-end
-
----@return boolean?
-function ENT:ShouldRefuel()
-    local v = self.v
-    if v.IsScar then ---@cast v dv.SCAR
-        return v:GetFuelPercent() < self.RefuelThreshold
-    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
-        return v:GetFuel() / v:GetMaxFuel() < self.RefuelThreshold
-    elseif isfunction(v.VC_fuelGet) ---@cast v Vehicle
-    and isfunction(v.VC_fuelGetMax) then
-        return v:VC_fuelGet(false) / v:VC_fuelGetMax() < self.RefuelThreshold
-    end
-end
-
-function ENT:Refuel()
-    local v = self.v
-    hook.Run("Decent Vehicle: OnRefuel", self)
-    if v.IsScar then ---@cast v dv.SCAR
-        v:Refuel()
-    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
-        v:SetFuel(v:GetMaxFuel())
-    elseif isfunction(v.VC_fuelSet) ---@cast v Vehicle
-    and isfunction(v.VC_fuelGetMax) then
-        v:VC_fuelSet(v:VC_fuelGetMax())
-    end
 end
 
 function ENT:FindFuelStation()
@@ -952,64 +913,7 @@ function ENT:Initialize()
         return
     end
 
-    if vehicle.IsScar ---@cast vehicle dv.SCAR
-    and not vehicle:HasDriver() then
-        self.v = vehicle
-        self.v.DecentVehicle = self
-        self.v.AIController = self
-
-        -- Tanks or something sometimes make errors so disable thinking.
-        self.OldSpecialThink, self.v.SpecialThink = self.v.SpecialThink, nil
-    elseif vehicle.IsSimfphyscar ---@cast vehicle dv.Simfphys
-    and vehicle:IsInitialized() and not IsValid(vehicle:GetDriver()) then
-        self.v = vehicle
-        self.v.DecentVehicle = self
-        self.v.RemoteDriver = self
-        self.HeadLightsID = numpad.OnUp  (self --[[@as Player]], KEY_F, "k_lgts",  self.v, false)
-        self.FogLightsID  = numpad.OnDown(self --[[@as Player]], KEY_V, "k_flgts", self.v, true)
-        self.ELSID        = numpad.OnUp  (self --[[@as Player]], KEY_H, "k_hrn",   self.v, false)
-        self.HornID       = numpad.OnDown(self --[[@as Player]], KEY_H, "k_hrn",   self.v, true)
-
-        self.OldPhysicsCollide = self.v.PhysicsCollide
-        self.v.PhysicsCollide = function(...)
-            self.CarCollide(...)
-            return self.OldPhysicsCollide(...)
-        end
-    elseif ---@cast vehicle Vehicle
-    isfunction(vehicle.GetWheelCount) and vehicle:GetWheelCount() -- Not a chair
-    and isfunction(vehicle.IsEngineEnabled) and vehicle:IsEngineEnabled() -- Engine is not locked
-    and not IsValid(vehicle:GetDriver()) then
-        self.v = vehicle
-        self.v.DecentVehicle = self
-        self.OnCollideCallback = self.v:AddCallback("PhysicsCollide", self.CarCollide)
-
-        if not isfunction(self.v.VC_getStates) or VCModFixedAroundNPCDriver then
-            local oldname = self.v:GetName()
-            self.v:SetName "decentvehicle"
-            self.NPCDriver = ents.Create "npc_vehicledriver"
-            self.NPCDriver:Spawn()
-            self.NPCDriver:SetKeyValue("Vehicle", "decentvehicle")
-            self.NPCDriver:Activate()
-            self.NPCDriver:Fire "StartForward"
-            self.NPCDriver:Fire("SetDriversMaxSpeed", "100")
-            self.NPCDriver:Fire("SetDriversMinSpeed", "0")
-            self.NPCDriver.InVehicle = self.InVehicle
-            self.NPCDriver.GetViewPunchAngles = self.GetViewPunchAngles -- For Seat Weaponizer 2
-            self.NPCDriver.SetViewPunchAngles = self.SetViewPunchAngles -- Just to be sure
-            self.NPCDriver:SetHealth(0) -- This makes other NPCs think the driver is dead
-            self.NPCDriver:SetSaveValue("m_lifeState", -1) -- so that they don't attack it.
-            self.NPCDriver.KeyDown = function(_, key)
-                return key == IN_FORWARD and self.Throttle > 0
-                or key == IN_BACK and self.Throttle < 0
-                or key == IN_MOVELEFT and self.Steering < 0
-                or key == IN_MOVERIGHT and self.Steering > 0
-                or key == IN_JUMP and self.HandBrake
-                or false
-            end
-            self.v:SetName(oldname or "")
-        end
-    end
-
+    self:InitializeVehicle(vehicle)
     if not IsValid(self.v) then SafeRemoveEntity(self) return end
 
     local e = EffectData()
@@ -1080,31 +984,7 @@ function ENT:OnRemove()
     self:SetHorn(false)
     self:SetEngineStarted(false)
     self:SetLocked(false)
-
-    if v.IsScar then ---@cast v dv.SCAR If the vehicle is SCAR.
-        v.AIController = nil
-        v.SpecialThink, self.OldSpecialThink = self.OldSpecialThink, nil
-    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys The vehicle is Simfphys Vehicle.
-        v.PhysicsCollide, self.OldPhysicsCollide = self.OldPhysicsCollide, nil
-        v.RemoteDriver = nil
-        v.PressedKeys.W = false
-        v.PressedKeys.A = false
-        v.PressedKeys.S = false
-        v.PressedKeys.D = false
-        v.PressedKeys.Space = false
-
-        numpad.Remove(self.HeadLightsID)
-        numpad.Remove(self.FogLightsID)
-        numpad.Remove(self.ELSID)
-        numpad.Remove(self.HornID)
-    else
-        v:RemoveCallback("PhysicsCollide", self.OnCollideCallback)
-        v:SetSaveValue("m_nSpeed", 0)
-        if IsValid(self.NPCDriver) then
-            self.NPCDriver:Fire "Stop"
-            SafeRemoveEntity(self.NPCDriver)
-        end
-    end
+    self:OnRemoveVehicle()
 
     if Photon and istable(v.VehicleTable) and v.VehicleTable.Photon then
         v.PhotonUnitIDRequestTime = nil
@@ -1118,8 +998,3 @@ function ENT:OnRemove()
         util.Effect("propspawn", e) -- Perform a spawn effect.
     end
 end
-
-if VCModFixedAroundNPCDriver then return end -- WORKAROUND!!!
-hook.Add("CanPlayerEnterVehicle", "Decent Vehicle: VCMod is not compatible with npc_vehicledriver", function(ply, vehicle, role)
-    if isfunction(vehicle.VC_getStates) and vehicle.DecentVehicle then return false end
-end)
