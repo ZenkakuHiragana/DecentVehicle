@@ -68,7 +68,7 @@ if not DecentVehicleDestination then
             "models/player/group03/male_09.mdl",
         },
         FakeCUserCmd = nil,
-        KmphToHUps = 1000 * 3.2808399 * 16 / 3600,
+        KphToHUps = 1000 * 3.2808399 * 16 / 3600,
         KmToHU = 1000 * 3.2808399 * 16,
         PID = {
             Throttle = {},

@@ -88,7 +88,7 @@ function ENT:TriggerInput(iname, value)
     elseif iname == "Is fuel station" then
         w.FuelStation = value == 1
     elseif iname == "Speed limit" then
-        w.SpeedLimit = value * dvd.KmphToHUps
+        w.SpeedLimit = value * dvd.KphToHUps
     elseif iname == "Use turn lights" then
         w.UseTurnLights = value == 1
     elseif iname == "Wait time" then
@@ -128,10 +128,10 @@ function ENT:ShowOutput()
         return
     end
 
-    self:SetOverlayText(Output:format(i, w.Group, tostring(w.FuelStation), w.SpeedLimit / dvd.KmphToHUps, tostring(w.UseTurnLights), w.WaitUntilNext))
+    self:SetOverlayText(Output:format(i, w.Group, tostring(w.FuelStation), w.SpeedLimit / dvd.KphToHUps, tostring(w.UseTurnLights), w.WaitUntilNext))
     Wire_TriggerOutput(self, "Group #", w.Group)
     Wire_TriggerOutput(self, "Is fuel station", w.FuelStation)
-    Wire_TriggerOutput(self, "Speed limit", w.SpeedLimit / dvd.KmphToHUps)
+    Wire_TriggerOutput(self, "Speed limit", w.SpeedLimit / dvd.KphToHUps)
     Wire_TriggerOutput(self, "Use turn lights", w.UseTurnLights)
     Wire_TriggerOutput(self, "Wait time", w.WaitUntilNext)
 end

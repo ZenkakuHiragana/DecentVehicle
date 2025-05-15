@@ -232,7 +232,7 @@ local function GenerateWaypoints(ply)
         net.Broadcast()
     end
 
-    local speed = ply:GetInfoNum("dv_route_speed", 45) * dvd.KmphToHUps
+    local speed = ply:GetInfoNum("dv_route_speed", 45) * dvd.KphToHUps
     local time = CurTime()
     local map = {} ---@type integer[]
     for i, n in ipairs(dvd.Nodegraph.nodes) do

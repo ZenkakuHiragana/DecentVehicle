@@ -75,7 +75,7 @@ function TOOL:LeftClick(trace)
         newpoint.FuelStation = fuel
         newpoint.UseTurnLights = shouldblink
         newpoint.WaitUntilNext = wait
-        newpoint.SpeedLimit = speed * dvd.KmphToHUps
+        newpoint.SpeedLimit = speed * dvd.KphToHUps
         newpoint.Group = group
         if dvd.Waypoints[oldpointID] then
             dvd.AddNeighbor(oldpointID, self.WaypointID)
@@ -162,7 +162,7 @@ function TOOL:RightClick(trace)
         w.FuelStation = fuel
         w.UseTurnLights = shouldblink
         w.WaitUntilNext = wait
-        w.SpeedLimit = speed * dvd.KmphToHUps
+        w.SpeedLimit = speed * dvd.KphToHUps
         w.Group = group
 
         if SERVER and player.GetCount() > 0 then
@@ -334,7 +334,7 @@ function TOOL:DrawHUD()
     for _, text in ipairs {
         texts.ShowInfo.ID .. tostring(waypointID),
         texts.ShowInfo.Group .. tostring(waypoint.Group),
-        texts.ShowInfo.SpeedLimit .. tostring(math.Round(waypoint.SpeedLimit / dvd.KmphToHUps, 2)),
+        texts.ShowInfo.SpeedLimit .. tostring(math.Round(waypoint.SpeedLimit / dvd.KphToHUps, 2)),
         texts.ShowInfo.WaitUntilNext .. tostring(math.Round(waypoint.WaitUntilNext, 2)),
         texts.ShowInfo.UseTurnLights .. (waypoint.UseTurnLights and "Yes" or "No"),
         texts.ShowInfo.FuelStation .. (waypoint.FuelStation and "Yes" or "No"),

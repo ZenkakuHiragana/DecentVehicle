@@ -646,7 +646,7 @@ function ENT:DoTrace()
     local currentspeed = math.abs(velocitydot)
     local trlength = math.max(tracemin, currentspeed * .8)
     self.TraceLength = Lerp((CurTime() - self.StopByTrace) / GobackTime, trlength, self.TraceLength or trlength)
-    local kmph = currentspeed / dvd.KmphToHUps
+    local kph = currentspeed / dvd.KphToHUps
     local groundpos = util.QuickTrace(vehiclepos, -vector_up * 32768, filter).HitPos
     local height = (vehiclepos.z - groundpos.z) / math.sqrt(2)
     local bound = math.min(self.Preference.TraceMaxBound or TraceMax, height)
