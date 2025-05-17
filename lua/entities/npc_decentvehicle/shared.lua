@@ -57,6 +57,14 @@
 ---@field PhotonUnitIDRequestTime number?
 ---@field VehicleTable   { Photon: boolean?, Name: string? }?
 
+---Photon 2 Injection
+---@class Vehicle
+---@field GetPhotonControllerFromAncestor (fun(self: Vehicle): PhotonController?)?
+
+---@class PhotonController : Entity
+---@field GetChannelMode fun(self: PhotonController, channel: string): string
+---@field SetChannelMode fun(self: PhotonController, channel: string, mode: string)
+
 ---SCAR Injection
 ---@class Player
 ---@field ScarSpecialKeyInput table<string, integer>

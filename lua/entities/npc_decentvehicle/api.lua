@@ -13,6 +13,23 @@ local LIGHTLEVEL = {
     ALL = 3,
 }
 
+---@param self ENT.DecentVehicle
+---@param key string
+---@param state integer
+---@param func fun(self: dv.SCAR, ...)
+---@param ... any
+local function SCAREmulateKey(self, key, state, func, ...)
+    local v = self.v ---@cast v dv.SCAR
+    local dummy = player.GetByID(1) ---@cast dummy -?
+    local dummyinput = dummy.ScarSpecialKeyInput
+    local controller = v.AIController
+    v.AIController = dummy
+    dummy.ScarSpecialKeyInput = {[key] = state}
+    if isfunction(func) then func(v, ...) end
+    v.AIController = controller
+    dummy.ScarSpecialKeyInput = dummyinput
+end
+
 function ENT:GetMaxSteeringAngle()
     local v = self.v
     if v.IsScar then ---@cast v dv.SCAR
@@ -49,6 +66,33 @@ function ENT:GetTraceFilter()
     return filter
 end
 
+function ENT:GetEngineStarted(vehicle)
+    local v = vehicle or self.v
+    if not (IsValid(v) and v:IsVehicle()) then return end
+    if v.IsScar then ---@cast v dv.SCAR
+        return v.IsOn
+    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        return v:EngineActive()
+    else ---@cast v Vehicle
+        return v:IsEngineStarted()
+    end
+end
+
+function ENT:GetLocked(vehicle)
+    local v = vehicle or self.v
+    if not (IsValid(v) and v:IsVehicle()) then return end
+    if v.IsScar then ---@cast v dv.SCAR
+        return v:IsLocked()
+    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        return v.VehicleLocked
+    elseif vcmod_main ---@cast v Vehicle
+    and isfunction(v.VC_isLocked) then
+        return v:VC_isLocked()
+    else ---@cast v Vehicle
+        return tonumber(v:GetKeyValues().VehicleLocked) ~= 0
+    end
+end
+
 function ENT:GetRunningLights()
     local v = self.v
     if v.IsScar then ---@cast v dv.SCAR
@@ -59,6 +103,12 @@ function ENT:GetRunningLights()
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and states.RunningLights
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Vehicle.Lights") ~= "AUTO"
+        end
     end
 end
 
@@ -72,6 +122,12 @@ function ENT:GetFogLights()
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and states.FogLights
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Vehicle.Lights") ~= "AUTO"
+        end
     end
 end
 
@@ -85,6 +141,12 @@ function ENT:GetLights(highbeams)
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and Either(highbeams, states.HighBeams, states.LowBeams)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Vehicle.Lights") ~= "HEADLIGHTS"
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.ELS_Illuminate) then
         return v:ELS_Illuminate()
@@ -100,6 +162,12 @@ function ENT:GetTurnLight(left)
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and Either(left, states.TurnLightLeft, states.TurnLightRight)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Vehicle.Signal") == (left and "LEFT" or "RIGHT")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.CAR_TurnLeft)
     and isfunction(v.CAR_TurnRight) then
@@ -116,89 +184,86 @@ function ENT:GetHazardLights()
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and states.HazardLights
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Vehicle.Signal") == "HAZARD"
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.CAR_Hazards) then
         return v:CAR_Hazards()
     end
 end
 
-function ENT:GetELS(v)
-    local vehicle = v or self.v
-    if not (IsValid(vehicle) and vehicle:IsVehicle()) then return end
-    if vehicle.IsScar then ---@cast vehicle dv.SCAR
-        return vehicle.SirenIsOn
-    elseif vehicle.IsSimfphyscar then ---@cast vehicle dv.Simfphys
-        return vehicle:GetEMSEnabled()
-    elseif vcmod_main and vcmod_els ---@cast vehicle Vehicle
-    and isfunction(vehicle.VC_getELSLightsOn) then
-        return vehicle:VC_getELSLightsOn()
-    elseif Photon ---@cast vehicle Vehicle
-    and isfunction(vehicle.ELS_Siren)
-    and isfunction(vehicle.ELS_Lights) then
-        return vehicle:ELS_Siren() and vehicle:ELS_Lights()
+function ENT:GetELS(vehicle)
+    local v = vehicle or self.v
+    if not (IsValid(v) and v:IsVehicle()) then return end
+    if v.IsScar then ---@cast v dv.SCAR
+        return v.SirenIsOn
+    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        return v:GetEMSEnabled()
+    elseif vcmod_main and vcmod_els ---@cast v Vehicle
+    and isfunction(v.VC_getELSLightsOn) then
+        return v:VC_getELSLightsOn()
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Emergency.Warning") ~= "OFF"
+        end
+    elseif Photon ---@cast v Vehicle
+    and isfunction(v.ELS_Siren)
+    and isfunction(v.ELS_Lights) then
+        return v:ELS_Siren() and v:ELS_Lights()
     end
 end
 
-function ENT:GetELSSound(v)
-    local vehicle = v or self.v
-    if not (IsValid(vehicle) and vehicle:IsVehicle()) then return end
-    if vehicle.IsScar then ---@cast vehicle dv.SCAR
-        return vehicle.SirenIsOn
-    elseif vehicle.IsSimfphyscar then ---@cast vehicle dv.Simfphys
-        return vehicle.ems and vehicle.ems:IsPlaying()
-    elseif vcmod_main and vcmod_els ---@cast vehicle Vehicle
-    and isfunction(vehicle.VC_getELSSoundOn)
-    and isfunction(vehicle.VC_getStates) then
-        local states = vehicle:VC_getStates()
-        return vehicle:VC_getELSSoundOn() or istable(states) and states.ELS_ManualOn
-    elseif Photon ---@cast vehicle Vehicle
-    and isfunction(vehicle.ELS_Siren) then
-        return vehicle:ELS_Siren()
+function ENT:GetELSSound(vehicle)
+    local v = vehicle or self.v
+    if not (IsValid(v) and v:IsVehicle()) then return end
+    if v.IsScar then ---@cast v dv.SCAR
+        return v.SirenIsOn
+    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        return v.ems and v.ems:IsPlaying()
+    elseif vcmod_main and vcmod_els ---@cast v Vehicle
+    and isfunction(v.VC_getELSSoundOn)
+    and isfunction(v.VC_getStates) then
+        local states = v:VC_getStates()
+        return v:VC_getELSSoundOn() or istable(states) and states.ELS_ManualOn
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Emergency.Siren") ~= "OFF"
+        end
+    elseif Photon ---@cast v Vehicle
+    and isfunction(v.ELS_Siren) then
+        return v:ELS_Siren()
     end
 end
 
-function ENT:GetHorn(v)
-    local vehicle = v or self.v
-    if not (IsValid(vehicle) and vehicle:IsVehicle()) then return end
-    if vehicle.IsScar then ---@cast vehicle dv.SCAR
-        return vehicle.Horn:IsPlaying()
-    elseif vehicle.IsSimfphyscar then ---@cast vehicle dv.Simfphys
-        return vehicle.HornKeyIsDown
-    elseif vcmod_main ---@cast vehicle Vehicle
-    and isfunction(vehicle.VC_getStates) then
-        local states = vehicle:VC_getStates()
+function ENT:GetHorn(vehicle)
+    local v = vehicle or self.v
+    if not (IsValid(v) and v:IsVehicle()) then return end
+    if v.IsScar then ---@cast v dv.SCAR
+        return v.Horn:IsPlaying()
+    elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        return v.HornKeyIsDown
+    elseif vcmod_main ---@cast v Vehicle
+    and isfunction(v.VC_getStates) then
+        local states = v:VC_getStates()
         return istable(states) and states.HornOn
-    elseif Photon ---@cast vehicle Vehicle
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            return pc:GetChannelMode("Emergency.SirenOverride") == "AIR"
+        end
+    elseif Photon ---@cast v Vehicle
     and isnumber(EMV_HORN)
-    and isfunction(vehicle.ELS_Horn) then
-        return vehicle:GetDTBool(EMV_HORN)
-    end
-end
-
-function ENT:GetLocked(v)
-    local vehicle = v or self.v
-    if not (IsValid(vehicle) and vehicle:IsVehicle()) then return end
-    if vehicle.IsScar then ---@cast vehicle dv.SCAR
-        return vehicle:IsLocked()
-    elseif vehicle.IsSimfphyscar then ---@cast vehicle dv.Simfphys
-        return vehicle.VehicleLocked
-    elseif vcmod_main ---@cast vehicle Vehicle
-    and isfunction(vehicle.VC_isLocked) then
-        return vehicle:VC_isLocked()
-    else ---@cast vehicle Vehicle
-        return tonumber(vehicle:GetKeyValues().VehicleLocked) ~= 0
-    end
-end
-
-function ENT:GetEngineStarted(v)
-    local vehicle = v or self.v
-    if not (IsValid(vehicle) and vehicle:IsVehicle()) then return end
-    if vehicle.IsScar then ---@cast vehicle dv.SCAR
-        return vehicle.IsOn
-    elseif vehicle.IsSimfphyscar then ---@cast vehicle dv.Simfphys
-        return vehicle:EngineActive()
-    else ---@cast vehicle Vehicle
-        return vehicle:IsEngineStarted()
+    and isfunction(v.ELS_Horn) then
+        return v:GetDTBool(EMV_HORN)
     end
 end
 
@@ -215,6 +280,12 @@ function ENT:SetRunningLights(on)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setRunningLights) then
         v:VC_setRunningLights(on)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) and on then
+            pc:SetChannelMode("Vehicle.Lights", "AUTO")
+        end
     end
 end
 
@@ -231,24 +302,13 @@ function ENT:SetFogLights(on)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setFogLights) then
         v:VC_setFogLights(on)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) and on then
+            pc:SetChannelMode("Vehicle.Lights", "AUTO")
+        end
     end
-end
-
----@param self ENT.DecentVehicle
----@param key string
----@param state integer
----@param func fun(self: dv.SCAR, ...)
----@param ... any
-local function SCAREmulateKey(self, key, state, func, ...)
-    local v = self.v ---@cast v dv.SCAR
-    local dummy = player.GetByID(1) ---@cast dummy -?
-    local dummyinput = dummy.ScarSpecialKeyInput
-    local controller = v.AIController
-    v.AIController = dummy
-    dummy.ScarSpecialKeyInput = {[key] = state}
-    if isfunction(func) then func(v, ...) end
-    v.AIController = controller
-    dummy.ScarSpecialKeyInput = dummyinput
 end
 
 function ENT:SetLights(on, highbeams)
@@ -288,6 +348,12 @@ function ENT:SetLights(on, highbeams)
         else
             v:VC_setLowBeams(on)
         end
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            pc:SetChannelMode("Vehicle.Lights", on and "HEADLIGHTS" or "OFF")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.ELS_IllumOn)
     and isfunction(v.ELS_IllumOff)
@@ -323,6 +389,16 @@ function ENT:SetTurnLight(on, left)
     and isfunction(v.VC_setTurnLightRight) then
         v:VC_setTurnLightLeft(on and left)
         v:VC_setTurnLightRight(on and not left)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            if on then
+                pc:SetChannelMode("Vehicle.Signal", left and "LEFT" or "RIGHT")
+            else
+                pc:SetChannelMode("Vehicle.Signal", "OFF")
+            end
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.CAR_TurnLeft)
     and isfunction(v.CAR_TurnRight)
@@ -357,6 +433,12 @@ function ENT:SetHazardLights(on)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setHazardLights) then
         v:VC_setHazardLights(on)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            pc:SetChannelMode("Vehicle.Signal", on and "HAZARD" or "OFF")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.CAR_Hazards)
     and isfunction(v.CAR_StopSignals) then
@@ -392,6 +474,13 @@ function ENT:SetELS(on)
     and isfunction(v.VC_setELSSound) then
         v:VC_setELSLights(on)
         v:VC_setELSSound(on)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            pc:SetChannelMode("Emergency.Warning", on and "MODE3" or "OFF")
+            pc:SetChannelMode("Emergency.Siren", on and "T1" or "OFF")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.ELS_SirenOn)
     and isfunction(v.ELS_SirenOff)
@@ -427,6 +516,12 @@ function ENT:SetELSSound(on)
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSSound) then
         v:VC_setELSSound(on)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            pc:SetChannelMode("Emergency.Siren", on and "T1" or "OFF")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.ELS_SirenOn)
     and isfunction(v.ELS_SirenOff)
@@ -464,6 +559,12 @@ function ENT:SetHorn(on)
         if not istable(states) then return end
         states.HornOn = true
         v:VC_setStates(states)
+    elseif Photon2 ---@cast v Vehicle
+    and isfunction(v.GetPhotonControllerFromAncestor) then
+        local pc = v:GetPhotonControllerFromAncestor()
+        if IsValid(pc) then
+            pc:SetChannelMode("Emergency.SirenOverride", on and "AIR" or "OFF")
+        end
     elseif Photon ---@cast v Vehicle
     and isfunction(v.ELS_Horn) then
         v:ELS_Horn(on)
@@ -486,9 +587,9 @@ function ENT:SetLocked(locked)
             v:UnLock()
         end
     else ---@cast v Vehicle
-        for _, seat in pairs(v:GetChildren()) do ---@cast seat Vehicle For Sligwolf's vehicles
+        for _, seat in pairs(v:GetChildren()) do ---@cast seat Vehicle
             if not (seat:IsVehicle() and seat.__SW_Vars) then continue end
-            seat:Fire(locked and "Lock" or "Unlock")
+            seat:Fire(locked and "Lock" or "Unlock") -- For Sligwolf's vehicles
         end
 
         if vcmod_main
@@ -537,6 +638,12 @@ function ENT:SetHandbrake(brake)
         v.PressedKeys.Space = brake
     elseif isfunction(v.SetHandbrake) then ---@cast v Vehicle
         v:SetHandbrake(brake)
+        if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
+            local pc = v:GetPhotonControllerFromAncestor()
+            if IsValid(pc) then
+                pc:SetChannelMode("Vehicle.Brake", brake and "BRAKE" or "OFF")
+            end
+        end
     end
 end
 
@@ -556,6 +663,12 @@ function ENT:SetThrottle(throttle)
         v.PressedKeys.S = throttle < -.01
     elseif isfunction(v.SetThrottle) then ---@cast v Vehicle
         v:SetThrottle(throttle)
+        if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
+            local pc = v:GetPhotonControllerFromAncestor()
+            if IsValid(pc) then
+                pc:SetChannelMode("Vehicle.Transmission", throttle < 0 and "REVERSE" or "DRIVE")
+            end
+        end
     end
 end
 
