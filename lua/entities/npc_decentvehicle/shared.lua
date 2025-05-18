@@ -246,6 +246,7 @@
 ---@field VehicleType integer
 ---@field wheels dv.Glide.Wheel[]
 ---@field ChangeHeadlightState fun(self: dv.Glide, value: integer)
+---@field ChangeSirenState fun(self: dv.Glide, value: integer)
 ---@field ChangeTurnSignalState fun(self: dv.Glide, value: integer)
 ---@field GetChassisHealth fun(self: dv.Glide): number
 ---@field GetEngineState fun(self: dv.Glide): integer
@@ -255,6 +256,7 @@
 ---@field GetMaxRPMTorque fun(self: dv.Glide): number
 ---@field GetMaxSteerAngle fun(self: dv.Glide): number
 ---@field GetPowerDistribution fun(self: dv.Glide): number
+---@field GetSirenState fun(self: dv.Glide): integer
 ---@field GetTurnSignalState fun(self: dv.Glide): integer
 ---@field SetInputBool fun(self: dv.Glide, seatIndex: integer, action: string, value: boolean)
 ---@field SetInputFloat fun(self: dv.Glide, seatIndex: integer, action: string, value: number)

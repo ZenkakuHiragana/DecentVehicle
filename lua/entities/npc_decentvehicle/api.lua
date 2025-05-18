@@ -254,7 +254,7 @@ function ENT:GetELS(vehicle)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         return false
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
-        return false
+        return v:GetSirenState() == 2
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSLightsOn) then
         return v:VC_getELSLightsOn()
@@ -281,7 +281,7 @@ function ENT:GetELSSound(vehicle)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         return false
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
-        return false
+        return v:GetSirenState() == 2
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSSoundOn)
     and isfunction(v.VC_getStates) then
@@ -588,7 +588,10 @@ function ENT:SetELS(on)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         -- Not implemented
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
-        -- Not implemented
+        local state = on and 2 or 0
+        if v:GetSirenState() ~= state then
+            v:ChangeSirenState(state)
+        end
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSLights)
     and isfunction(v.VC_setELSSound) then
@@ -636,7 +639,10 @@ function ENT:SetELSSound(on)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         -- Not implemented
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
-        -- Not implemented
+        local state = on and 2 or 0
+        if v:GetSirenState() ~= state then
+            v:ChangeSirenState(state)
+        end
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSSound) then
         v:VC_setELSSound(on)
