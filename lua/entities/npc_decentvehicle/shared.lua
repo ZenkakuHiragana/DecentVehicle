@@ -241,24 +241,25 @@
 
 ---@class dv.Glide : Entity
 ---@field IsGlideVehicle true
----@field VehicleType integer
 ---@field seats Vehicle[]
+---@field VehicleType integer
 ---@field wheels dv.Glide.Wheel[]
 ---@field ChangeHeadlightState fun(self: dv.Glide, value: integer)
 ---@field ChangeTurnSignalState fun(self: dv.Glide, value: integer)
 ---@field GetChassisHealth fun(self: dv.Glide): number
----@field GetMaxSteerAngle fun(self: dv.Glide): number
----@field GetMaxRPMTorque fun(self: dv.Glide): number
----@field GetPowerDistribution fun(self: dv.Glide): number
 ---@field GetEngineState fun(self: dv.Glide): integer
----@field GetIsLocked fun(self: dv.Glide): boolean
----@field GetIsHonking fun(self: dv.Glide): boolean
 ---@field GetHeadlightState fun(self: dv.Glide): integer
+---@field GetIsHonking fun(self: dv.Glide): boolean
+---@field GetIsLocked fun(self: dv.Glide): boolean
+---@field GetMaxRPMTorque fun(self: dv.Glide): number
+---@field GetMaxSteerAngle fun(self: dv.Glide): number
+---@field GetPowerDistribution fun(self: dv.Glide): number
 ---@field GetTurnSignalState fun(self: dv.Glide): integer
 ---@field SetInputBool fun(self: dv.Glide, seatIndex: integer, action: string, value: boolean)
 ---@field SetInputFloat fun(self: dv.Glide, seatIndex: integer, action: string, value: number)
 ---@field SetIsHonking fun(self: dv.Glide, value: boolean)
 ---@field SetLocked fun(self: dv.Glide, value: boolean, doNotNotify: boolean?)
+---@field SwitchGear fun(self: dv.Glide, value: integer)
 ---@field TurnOff fun(self: dv.Glide)
 ---@field TurnOn fun(self: dv.Glide)
 
