@@ -93,7 +93,7 @@ if not DecentVehicleDestination then
             {Time = CurTime() + 33, Light = 1}, -- Light pattern #1
             {Time = CurTime() + 40, Light = 3}, -- Light pattern #2
         },
-        Version = {1, 1, 3}, -- Major version, Minor version, Revision
+        Version = {1, 2, 0}, -- Major version, Minor version, Revision
         Waypoints = {}, ---@type dv.Waypoint[]
         WaypointSize = 32,
         WireManagers = {}, ---@type table<ENT.DVWireManager, true>
