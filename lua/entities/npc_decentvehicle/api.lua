@@ -36,6 +36,21 @@ function ENT:GetMaxSteeringAngle()
         return v.MaxSteerForce * 3 -- Obviously this is not actually steering angle
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.VehicleData.steerangle
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not isfunction(v.GetMaxSteerAngle) then return 0 end
+        if not isfunction(v.SetNWMaxSteer) then return 0 end -- For lvs_base_wheeldrive_trailer
+        return v:GetMaxSteerAngle()
+        -- local vel = v:GetVelocity()
+        -- local forward = self:GetVehicleForward()
+        -- local speed = vel:Dot(forward)
+        -- local max = v:GetMaxSteerAngle()
+        -- if speed > (v.FastSteerActiveVelocity or math.huge) then
+        --     local driftAngle = math.deg(math.acos(vel:GetNormalized():Dot(forward)))
+        --     if driftAngle < (v.FastSteerDeactivationDriftAngle or math.huge) then
+        --         max = math.min(max, (v.FastSteerAngleClamp or max))
+        --     end
+        -- end
+        -- return max
     else ---@cast v Vehicle
         local mph = v:GetSpeed()
         if mph < self.SteeringSpeedFast then
@@ -73,6 +88,8 @@ function ENT:GetEngineStarted(vehicle)
         return v.IsOn
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:EngineActive()
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return v:GetEngineActive()
     else ---@cast v Vehicle
         return v:IsEngineStarted()
     end
@@ -85,6 +102,8 @@ function ENT:GetLocked(vehicle)
         return v:IsLocked()
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.VehicleLocked
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return v:GetlvsLockedStatus()
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_isLocked) then
         return v:VC_isLocked()
@@ -103,6 +122,10 @@ function ENT:GetRunningLights()
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and states.RunningLights
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        return isfunction(v.HasFogLights) and v:HasFogLights()
+           and IsValid(lh) and lh:GetFogActive()
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -122,6 +145,10 @@ function ENT:GetFogLights()
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and states.FogLights
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        return isfunction(v.HasFogLights) and v:HasFogLights()
+           and IsValid(lh) and lh:GetFogActive()
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -141,6 +168,14 @@ function ENT:GetLights(highbeams)
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
         return istable(states) and Either(highbeams, states.HighBeams, states.LowBeams)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        if not (IsValid(lh) and lh:GetActive()) then return false end
+        if highbeams then
+            return isfunction(v.HasHighBeams) and v:HasHighBeams() and lh:GetHighActive()
+        else
+            return lh:GetActive()
+        end
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -156,8 +191,12 @@ end
 function ENT:GetTurnLight(left)
     local v = self.v
     if v.IsScar then -- Does SCAR have turn lights?
+        return false
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return Either(left, self.TurnLightLeft, self.TurnLightRight)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.HasTurnSignals) and v:HasTurnSignals()) then return false end
+        return isfunction(v.GetTurnMode) and v:GetTurnMode() == (left and 1 or 2)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -180,6 +219,9 @@ function ENT:GetHazardLights()
     if v.IsScar then ---@cast v dv.SCAR
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return self.HazardLights
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.HasTurnSignals) and v:HasTurnSignals()) then return false end
+        return isfunction(v.GetTurnMode) and v:GetTurnMode() == 3
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -203,6 +245,8 @@ function ENT:GetELS(vehicle)
         return v.SirenIsOn
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:GetEMSEnabled()
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return false
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSLightsOn) then
         return v:VC_getELSLightsOn()
@@ -226,6 +270,8 @@ function ENT:GetELSSound(vehicle)
         return v.SirenIsOn
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.ems and v.ems:IsPlaying()
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return false
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSSoundOn)
     and isfunction(v.VC_getStates) then
@@ -250,6 +296,8 @@ function ENT:GetHorn(vehicle)
         return v.Horn:IsPlaying()
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.HornKeyIsDown
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return false
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -277,6 +325,11 @@ function ENT:SetRunningLights(on)
         self.SimfphysRunningLights = on
         v:SetFogLightsEnabled(not on)
         numpad.Activate(self --[[@as Player]], KEY_V, false)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        if IsValid(lh) and isfunction(v.HasFogLights) and v:HasFogLights() then
+            lh:SetFogActive(on)
+        end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setRunningLights) then
         v:VC_setRunningLights(on)
@@ -299,6 +352,11 @@ function ENT:SetFogLights(on)
         self.SimfphysFogLights = on
         v:SetFogLightsEnabled(not on)
         numpad.Activate(self --[[@as Player]], KEY_V, false)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        if IsValid(lh) and isfunction(v.HasFogLights) and v:HasFogLights() then
+            lh:SetFogActive(on)
+        end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setFogLights) then
         v:VC_setFogLights(on)
@@ -338,6 +396,13 @@ function ENT:SetLights(on, highbeams)
                     numpad.Deactivate(self --[[@as Player]], KEY_F, false)
                 end)
             end
+        end
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
+        if not IsValid(lh) then return end
+        lh:SetActive(on)
+        if highbeams and isfunction(v.HasHighBeams) and v:HasHighBeams() then
+            lh:SetHighActive(on)
         end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setHighBeams)
@@ -384,6 +449,15 @@ function ENT:SetTurnLight(on, left)
         self.TurnLightLeft = on and left
         self.TurnLightRight = on and not left
         self.HazardLights = false
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.SetTurnMode)
+           and isfunction(v.HasTurnSignals)
+           and v:HasTurnSignals()) then return end
+        if on then
+            v:SetTurnMode(left and 1 or 2)
+        else
+            v:SetTurnMode(0)
+        end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setTurnLightLeft)
     and isfunction(v.VC_setTurnLightRight) then
@@ -430,6 +504,11 @@ function ENT:SetHazardLights(on)
         self.TurnLightLeft = false
         self.TurnLightRight = false
         self.HazardLights = true
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.SetTurnMode)
+           and isfunction(v.HasTurnSignals)
+           and v:HasTurnSignals()) then return end
+        v:SetTurnMode(on and 3 or 0)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setHazardLights) then
         v:VC_setHazardLights(on)
@@ -469,6 +548,8 @@ function ENT:SetELS(on)
         v.emson = not on
         v.KeyPressedTime = CurTime() - dt
         numpad.Deactivate(self --[[@as Player]], KEY_H, false)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        -- Not implemented
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSLights)
     and isfunction(v.VC_setELSSound) then
@@ -513,6 +594,8 @@ function ENT:SetELSSound(on)
                 v.ems:Stop()
             end
         end
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        -- Not implemented
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSSound) then
         v:VC_setELSSound(on)
@@ -552,6 +635,8 @@ function ENT:SetHorn(on)
         else
             v.HornKeyIsDown = false
         end
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        -- Not implemented
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates)
     and isfunction(v.VC_setStates) then
@@ -581,6 +666,12 @@ function ENT:SetLocked(locked)
             v:UnLock()
         end
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
+        if locked then
+            v:Lock()
+        else
+            v:UnLock()
+        end
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         if locked then
             v:Lock()
         else
@@ -620,12 +711,19 @@ function ENT:SetEngineStarted(on)
         else
             v:StopEngine()
         end
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if on then
+            v:StartEngine()
+        else
+            v:StopEngine()
+        end
     elseif isfunction(v.StartEngine) then ---@cast v Vehicle
         v:StartEngine(on)
     end
 end
 
 function ENT:SetHandbrake(brake)
+    if self.HandBrake == brake then return end
     self.HandBrake = brake
     local v = self.v
     if v.IsScar then ---@cast v dv.SCAR
@@ -636,6 +734,12 @@ function ENT:SetHandbrake(brake)
         end
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         v.PressedKeys.Space = brake
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if brake then
+            if isfunction(v.EnableHandbrake) then v:EnableHandbrake() end
+        else
+            if isfunction(v.ReleaseHandbrake) then v:ReleaseHandbrake() end
+        end
     elseif isfunction(v.SetHandbrake) then ---@cast v Vehicle
         v:SetHandbrake(brake)
         if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
@@ -661,6 +765,25 @@ function ENT:SetThrottle(throttle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         v.PressedKeys.W = throttle > .01
         v.PressedKeys.S = throttle < -.01
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.LerpThrottle)
+            and isfunction(v.SetThrottle)
+            and isfunction(v.LerpBrake)
+            and isfunction(v.SetBrake)) then return end
+        local dot = self:GetVehicleForward():Dot(v:GetVelocity())
+        if math.abs(dot) < self.AutoReverseVelocity then
+            v:LerpBrake(0)
+            v:LerpThrottle(math.abs(throttle))
+            if math.abs(throttle) > 0.5 then
+                v:SetReverse(throttle < 0)
+            end
+        elseif dot * throttle > 0 then
+            v:LerpBrake(0)
+            v:LerpThrottle(math.abs(throttle))
+        else
+            v:LerpBrake(math.abs(throttle))
+            v:LerpThrottle(0)
+        end
     elseif isfunction(v.SetThrottle) then ---@cast v Vehicle
         v:SetThrottle(throttle)
         if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
@@ -689,6 +812,13 @@ function ENT:SetSteering(steering)
         v:PlayerSteerVehicle(self --[[@as Player]], -math.min(steering, 0), math.max(steering, 0))
         v.PressedKeys.A = steering < -.01 and steering < s and s < 0
         v.PressedKeys.D = steering > .01 and 0 < s and s < steering
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if not (isfunction(v.SteerTo)
+        and isfunction(v.SetSteer)
+        and isfunction(v.GetMaxSteerAngle)
+        and isfunction(v.SetPivotSteer)) then return end
+        v:SteerTo(steering, v:GetMaxSteerAngle())
+        v:SetPivotSteer(0)
     elseif isfunction(v.SetSteering) then ---@cast v Vehicle
         v:SetSteering(steering, 0)
     end
@@ -715,7 +845,8 @@ function ENT:InitializeVehicle(vehicle)
         self.v.AIController = self
 
         -- Tanks or something sometimes make errors so disable thinking.
-        self.OldSpecialThink, self.v.SpecialThink = self.v.SpecialThink, nil
+        self.OldSpecialThink = self.v.SpecialThink
+        self.v.SpecialThink = nil
     elseif vehicle.IsSimfphyscar ---@cast vehicle dv.Simfphys
     and vehicle:IsInitialized() and not IsValid(vehicle:GetDriver()) then
         self.v = vehicle
@@ -731,6 +862,19 @@ function ENT:InitializeVehicle(vehicle)
             self.CarCollide(...)
             return self.OldPhysicsCollide(...)
         end
+    elseif vehicle.LVS or vehicle.LVS_GUNNER ---@cast vehicle dv.LVS
+    and not IsValid(vehicle:GetDriver()) then ---@cast vehicle dv.LVS
+        self.OldRunAI = vehicle.RunAI
+        vehicle.RunAI = function() end
+        vehicle:SetAI(true)
+        vehicle:StartEngine()
+        if isfunction(vehicle.ReleaseHandbrake) then vehicle:ReleaseHandbrake() end
+        if isfunction(vehicle.SetActive) then vehicle:SetActive(true) end
+        if isfunction(vehicle.SetReverse) then vehicle:SetReverse(false) end
+        if isfunction(vehicle.DisableManualTransmission) then vehicle:DisableManualTransmission() end
+
+        self.v = vehicle
+        self.v.DecentVehicle = self
     elseif ---@cast vehicle Vehicle
     isfunction(vehicle.GetWheelCount) and vehicle:GetWheelCount() -- Not a chair
     and isfunction(vehicle.IsEngineEnabled) and vehicle:IsEngineEnabled() -- Engine is not locked
@@ -738,37 +882,15 @@ function ENT:InitializeVehicle(vehicle)
         self.v = vehicle
         self.v.DecentVehicle = self
         self.OnCollideCallback = self.v:AddCallback("PhysicsCollide", self.CarCollide)
-
         if not isfunction(self.v.VC_getStates) or VCModFixedAroundNPCDriver then
-            local oldname = self.v:GetName()
-            self.v:SetName "decentvehicle"
-            self.NPCDriver = ents.Create "npc_vehicledriver"
-            self.NPCDriver:Spawn()
-            self.NPCDriver:SetKeyValue("Vehicle", "decentvehicle")
-            self.NPCDriver:Activate()
-            self.NPCDriver:Fire "StartForward"
-            self.NPCDriver:Fire("SetDriversMaxSpeed", "100")
-            self.NPCDriver:Fire("SetDriversMinSpeed", "0")
-            self.NPCDriver.InVehicle = self.InVehicle
-            self.NPCDriver.GetViewPunchAngles = self.GetViewPunchAngles -- For Seat Weaponizer 2
-            self.NPCDriver.SetViewPunchAngles = self.SetViewPunchAngles -- Just to be sure
-            self.NPCDriver:SetHealth(0) -- This makes other NPCs think the driver is dead
-            self.NPCDriver:SetSaveValue("m_lifeState", -1) -- so that they don't attack it.
-            self.NPCDriver.KeyDown = function(_, key)
-                return key == IN_FORWARD and self.Throttle > 0
-                or key == IN_BACK and self.Throttle < 0
-                or key == IN_MOVELEFT and self.Steering < 0
-                or key == IN_MOVERIGHT and self.Steering > 0
-                or key == IN_JUMP and self.HandBrake
-                or false
-            end
-            self.v:SetName(oldname or "")
+            self:CreateNPCDriver()
         end
     end
 end
 
 function ENT:OnRemoveVehicle()
     local v = self.v
+    v.DecentVehicle = nil
     if v.IsScar then ---@cast v dv.SCAR If the vehicle is SCAR.
         v.AIController = nil
         v.SpecialThink, self.OldSpecialThink = self.OldSpecialThink, nil
@@ -785,13 +907,22 @@ function ENT:OnRemoveVehicle()
         numpad.Remove(self.FogLightsID)
         numpad.Remove(self.ELSID)
         numpad.Remove(self.HornID)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        v:SetAI(false)
+        v:StopEngine()
+        v.RunAI, self.OldRunAI = self.OldRunAI, nil
+        if isfunction(v.EnableHandbrake) then v:EnableHandbrake() end
+        if isfunction(v.SetActive)       then v:SetActive(false)  end
+        if isfunction(v.SetThrottle)     then v:SetThrottle(0)    end
+        if isfunction(v.SetSteer)        then v:SetSteer(0)       end
     else ---@cast v Vehicle
         v:RemoveCallback("PhysicsCollide", self.OnCollideCallback)
         v:SetSaveValue("m_nSpeed", 0)
-        if IsValid(self.NPCDriver) then
-            self.NPCDriver:Fire "Stop"
-            SafeRemoveEntity(self.NPCDriver)
-        end
+    end
+
+    if IsValid(self.NPCDriver) then
+        self.NPCDriver:Fire "Stop"
+        SafeRemoveEntity(self.NPCDriver)
     end
 end
 

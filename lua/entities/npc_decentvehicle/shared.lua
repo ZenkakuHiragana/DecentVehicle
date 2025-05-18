@@ -166,14 +166,82 @@
 ---@field UnLock              fun(self: dv.Simfphys)
 ---@field PhysicsCollide      function Overriden by Decent Vehicle
 
+---Type annotation for LVS base
+---@class dv.LVS : Entity
+---@field LVS true
+---@field LVS_GUNNER true
+---@field AutoReverseVelocity number
+---@field EngineCurve number
+---@field MaxVelocity number
+---@field MaxVelocityReverse number
+---@field DisableManualTransmission fun(self: dv.LVS)
+---@field EnableHandbrake fun(self: dv.LVS)
+---@field GetActive fun(self: dv.LVS): boolean
+---@field GetAI fun(self: dv.LVS): boolean
+---@field GetBrake fun(self: dv.LVS): number
+---@field GetDriver fun(self: dv.LVS): Entity
+---@field GetDriverSeat fun(self: dv.LVS): Entity
+---@field GetEngineActive fun(self: dv.LVS): boolean
+---@field GetEngineTorque fun(self: dv.LVS): number
+---@field GetLightsHandler fun(self: dv.LVS): dv.LVS.LightsHandler
+---@field GetMaxSteerAngle fun(self: dv.LVS): number
+---@field GetReverse fun(self: dv.LVS): boolean
+---@field GetSteer fun(self: dv.LVS): number
+---@field GetThrottle fun(self: dv.LVS): number
+---@field GetTurnMode fun(self: dv.LVS): integer
+---@field GetlvsLockedStatus fun(self: dv.LVS): boolean
+---@field GetWheels fun(self: dv.LVS): dv.LVS.Wheel[]
+---@field HasFogLights fun(self: dv.LVS): boolean
+---@field HasHighBeams fun(self: dv.LVS): boolean
+---@field HasTurnSignals fun(self: dv.LVS): boolean
+---@field LerpBrake fun(self: dv.LVS, value: number)
+---@field LerpThrottle fun(self: dv.LVS, value: number)
+---@field OnHandbrakeActiveChanged fun(self: dv.LVS, active: boolean)
+---@field ReleaseHandbrake fun(self: dv.LVS)
+---@field RunAI fun(self: dv.LVS)
+---@field SetActive fun(self: dv.LVS, value: boolean)
+---@field SetAI fun(self: dv.LVS, value: boolean)
+---@field SetBrake fun(self: dv.LVS, value: number)
+---@field SetDriver fun(self: dv.LVS, value: Entity)
+---@field SetDriverSeat fun(self: dv.LVS, value: Entity)
+---@field SetHandbrake fun(self: dv.LVS, value: boolean)
+---@field SetNWMaxSteer fun(self: dv.LVS, value: number)
+---@field SetPivotSteer fun(self: dv.LVS, value: number)
+---@field SetReverse fun(self: dv.LVS, value: boolean)
+---@field SetSteer fun(self: dv.LVS, value: number)
+---@field SetThrottle fun(self: dv.LVS, value: number)
+---@field SetTurnMode fun(self: dv.LVS, value: integer)
+---@field Sign fun(self: dv.LVS, value: number): number
+---@field SteerTo fun(self: dv.LVS, value: integer, maxSteer: number)
+---@field StartEngine fun(self: dv.LVS)
+---@field StopEngine fun(self: dv.LVS)
+---@field Lock fun(self: dv.LVS)
+---@field UnLock fun(self: dv.LVS)
+
+---@class dv.LVS.Wheel : Entity
+---@field GetRadius fun(self: dv.LVS.Wheel): number
+---@field GetRotationAxis fun(self: dv.LVS.Wheel): Vector
+---@field GetTorqueFactor fun(self: dv.LVS.Wheel): number
+---@field VelToRPM fun(self: dv.LVS.Wheel, velocity: number): number
+
+---@class dv.LVS.LightsHandler : Entity
+---@field GetActive fun(self: dv.LVS.LightsHandler): boolean
+---@field GetFogActive fun(self: dv.LVS.LightsHandler): boolean
+---@field GetHighActive fun(self: dv.LVS.LightsHandler): boolean
+---@field SetActive fun(self: dv.LVS.LightsHandler, value: boolean)
+---@field SetFogActive fun(self: dv.LVS.LightsHandler, value: boolean)
+---@field SetHighActive fun(self: dv.LVS.LightsHandler, value: boolean)
+
 ---@alias dv.Vehicle
 ---| Vehicle
 ---| dv.SCAR
 ---| dv.Simfphys
+---| dv.LVS
 
 ---@class ENT.DecentVehicle : Structure.ENT, Entity, ENTITY
 ---@field Group             integer
 ---@field Model             string|string[]?
+---@field OldRunAI          function
 ---@field OldSpecialThink   function
 ---@field RealFindInSphere  function?
 ---@field Trace             Structure.TraceResult
@@ -216,6 +284,9 @@ end
 
 function ENT:GetVehicleForward(v)
     local vehicle = v or self:GetNWEntity "Vehicle"
+    if vehicle.LVS or vehicle.LVS_GUNNER then
+        return vehicle:LocalToWorldAngles(vehicle.ForwardAngle or Angle()):Forward()
+    end
     if not (IsValid(vehicle) and vehicle:IsVehicle()) then return self:GetForward() end
     if vehicle.IsScar then
         return vehicle:GetForward()
@@ -228,6 +299,9 @@ end
 
 function ENT:GetVehicleRight(v)
     local vehicle = v or self:GetNWEntity "Vehicle"
+    if vehicle.LVS or vehicle.LVS_GUNNER then
+        return vehicle:LocalToWorldAngles(vehicle.ForwardAngle or Angle()):Right()
+    end
     if not (IsValid(vehicle) and vehicle:IsVehicle()) then return self:GetRight() end
     if vehicle.IsScar then
         return vehicle:GetRight()
@@ -240,6 +314,9 @@ end
 
 function ENT:GetVehicleUp(v)
     local vehicle = v or self:GetNWEntity "Vehicle"
+    if vehicle.LVS or vehicle.LVS_GUNNER then
+        return vehicle:LocalToWorldAngles(vehicle.ForwardAngle or Angle()):Up()
+    end
     if not (IsValid(vehicle) and vehicle:IsVehicle()) then return self:GetUp() end
     if vehicle.IsScar then
         return vehicle:GetUp()

@@ -229,6 +229,37 @@ function ENT:EstimateAccel()
         accel = math.max(force * v.WheelTorqTraction, 1)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         accel = v:GetMaxTorque() * 2 - math.Clamp(v.ForwardSpeed, -v.Brake, v.Brake)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        if isfunction(v.GetWheels) and isfunction(v.GetReverse) then
+            local engineTorque = self.EngineTorque
+            local targetVelocity = v:GetReverse() and -self.MaxRevSpeed or self.MaxSpeed
+            local totalForce = 0
+            local totalMass = self.Mass
+
+            for _, w in pairs(v:GetWheels()) do
+                local ph = w:GetPhysicsObject()
+                if IsValid(ph) then
+                    local torqueFactor = w:GetTorqueFactor()
+                    local curRPM = ph:GetAngleVelocity():Dot(w:GetRotationAxis()) / 360 * 6
+                    local curRPMabs = math.abs(curRPM)
+                    local targetRPM = w:VelToRPM(targetVelocity)
+                    local targetRPMabs = math.abs(targetRPM)
+                    local sign = v:Sign(targetRPM - curRPM)
+                    local powerRPM = targetRPMabs * self.EngineCurve
+                    local targetRPMDiff  = math.max(targetRPMabs - powerRPM, 0)
+                    local currentRPMDiff = math.max(curRPMabs    - powerRPM, 0)
+                    local powerCurve = (powerRPM + targetRPMDiff - currentRPMDiff) / targetRPMabs * sign
+                    local torque = powerCurve * engineTorque * torqueFactor
+
+                    local force = torque / w:GetRadius()
+                    local mass = ph:GetMass()
+                    totalForce = totalForce + force
+                    totalMass = totalMass + mass
+                end
+            end
+
+            accel = totalForce / totalMass
+        end
     else ---@cast v Vehicle
         local forward = v:GetForward()
         local gearratio = self.GearRatio[v:GetOperatingParams().gear + 1]
@@ -277,6 +308,14 @@ function ENT:GetVehicleParams()
         end
 
         self.WheelBase = positive_offset / math.max(num_positive, 1) - negative_offset / math.max(num_negative, 1)
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        self.AutoReverseVelocity = v.AutoReverseVelocity or 0
+        self.MaxSpeed = v.MaxVelocity or 0
+        self.MaxRevSpeed = v.MaxVelocityReverse or 0
+        self.EngineCurve = v.EngineCurve or 1
+        self.EngineTorque = isfunction(v.GetEngineTorque) and v:GetEngineTorque() or 0
+        local ph = v:GetPhysicsObject()
+        self.Mass = IsValid(ph) and ph:GetMass() or 1
     elseif isfunction(v.GetVehicleParams) then ---@cast v Vehicle
         local params = v:GetVehicleParams()
         local axles = params.axles
@@ -326,6 +365,8 @@ function ENT:GetVehiclePrefix()
         return "SCAR_"
     elseif self.v.IsSimfphyscar then
         return "Simfphys_"
+    elseif self.v.LVS or self.v.LVS_GUNNER then
+        return "LVS_"
     else
         return "Source_"
     end
@@ -344,6 +385,32 @@ function ENT:GetVehicleIdentifier()
     return self:GetVehiclePrefix() .. id
 end
 
+function ENT:CreateNPCDriver()
+    local oldname = self.v:GetName()
+    self.v:SetName "decentvehicle"
+    self.NPCDriver = ents.Create "npc_vehicledriver"
+    self.NPCDriver:Spawn()
+    self.NPCDriver:SetKeyValue("Vehicle", "decentvehicle")
+    self.NPCDriver:Activate()
+    self.NPCDriver:Fire "StartForward"
+    self.NPCDriver:Fire("SetDriversMaxSpeed", "100")
+    self.NPCDriver:Fire("SetDriversMinSpeed", "0")
+    self.NPCDriver.InVehicle = self.InVehicle
+    self.NPCDriver.GetViewPunchAngles = self.GetViewPunchAngles -- For Seat Weaponizer 2
+    self.NPCDriver.SetViewPunchAngles = self.SetViewPunchAngles -- Just to be sure
+    self.NPCDriver:SetHealth(0) -- This makes other NPCs think the driver is dead
+    self.NPCDriver:SetSaveValue("m_lifeState", -1) -- so that they don't attack it.
+    self.NPCDriver.KeyDown = function(_, key)
+        return key == IN_FORWARD and self.Throttle > 0
+        or key == IN_BACK and self.Throttle < 0
+        or key == IN_MOVELEFT and self.Steering < 0
+        or key == IN_MOVERIGHT and self.Steering > 0
+        or key == IN_JUMP and self.HandBrake
+        or false
+    end
+    self.v:SetName(oldname or "")
+end
+
 function ENT:AttachModel()
     local v = self.v
     local seat = v ---@type Entity
@@ -351,6 +418,8 @@ function ENT:AttachModel()
         seat = v.Seats and v.Seats[1]
     elseif self.v.IsSimfphyscar then ---@cast v dv.Simfphys
         seat = v.DriverSeat
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        seat = v:GetDriverSeat()
     end
 
     if not IsValid(seat) then return end
@@ -413,7 +482,7 @@ end
 ---@return boolean?
 function ENT:IsValidVehicle()
     if not IsValid(self.v) then return end -- The tied vehicle goes NULL.
-    if not self.v:IsVehicle() then return end -- Somehow it becomes non-vehicle entity.
+    if not (self.v:IsVehicle() or self.v.LVS or self.v.LVS_GUNNER) then return end -- Somehow it becomes non-vehicle entity.
     if not self.v.DecentVehicle then return end -- Somehow it's a normal vehicle.
     if not IsValid(self:GetNWEntity "Seat") then return end -- It couldn't find the driver seat.
     if self ~= self.v.DecentVehicle then return end -- It has a different driver.
@@ -583,7 +652,7 @@ function ENT:DriveToWaypoint()
             self.StopByTrace = CurTime() + FrameTime() -- Reset going back timer
         end
 
-        if not (self.v.IsScar or self.v.IsSimfphyscar)
+        if not (self.v.IsScar or self.v.IsSimfphyscar or self.v.LVS or self.v.LVS_GUNNER)
         and velocitydot * goback * throttle < 0
         and dvd.GetAng(physenv.GetGravity(), forward) < .1 then -- Exception #1: DV is going down
             throttle = 0 -- The solution of the brake issue.
@@ -865,6 +934,21 @@ end
 
 function ENT:Think()
     if not self:IsValidVehicle() then SafeRemoveEntity(self) return end
+    if self.v.LVS or self.v.LVS_GUNNER then
+        local v = self.v ---@cast v dv.LVS
+        local OnHandbrakeActiveChanged = self.v.OnHandbrakeActiveChanged
+        local steer = v:GetSteer()
+        local throttle = v:GetThrottle()
+        local reverse = v:GetReverse()
+        v.OnHandbrakeActiveChanged = function() end
+        self.OldRunAI(v)
+        if isfunction(v.SetSteer) and isfunction(v.SetThrottle) and isfunction(v.SetReverse) then
+            v:SetSteer(steer)
+            v:SetThrottle(throttle)
+            v:SetReverse(reverse)
+            v.OnHandbrakeActiveChanged = OnHandbrakeActiveChanged
+        end
+    end
     if self:ShouldStop() then
         self:StopDriving()
         self:FindFirstWaypoint()
@@ -893,7 +977,8 @@ function ENT:Initialize()
     -- Pick up a vehicle in the given sphere.
     local mindistance, vehicle = math.huge, nil ---@type number, dv.Vehicle
     for k, v in pairs(CorrectFindInSphere(self:GetPos(), DetectionRange:GetFloat())) do
-        if not v:IsVehicle() then continue end
+        ---@cast v dv.LVS
+        if not (v:IsVehicle() or v.LVS or v.LVS_GUNNER) then continue end
         if IsValid(v:GetParent()) and v:GetParent():IsVehicle() then continue end
         local d = self:GetPos():DistToSqr(v:GetPos())
         if d > mindistance then continue end
