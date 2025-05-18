@@ -29,6 +29,7 @@ local function GetDriver(seat)
         end
     end
 
+     ---@cast driver dv.Vehicle
     if not (IsValid(driver) and (driver:IsVehicle() or driver.LVS or driver.LVS_GUNNER)) then return end
     return driver.DecentVehicle
 end
