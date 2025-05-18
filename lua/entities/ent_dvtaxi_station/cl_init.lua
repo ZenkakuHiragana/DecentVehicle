@@ -1,4 +1,10 @@
 
+-- Copyright © 2018-2030 Decent Vehicle
+-- written by ∩(≡＾ω＾≡)∩ (https://steamcommunity.com/id/greatzenkakuman/)
+-- and DangerKiddy(DK) (https://steamcommunity.com/profiles/76561198132964487/).
+
+include "shared.lua"
+
 local ENT = ENT ---@class ENT.TaxiStation
 ENT.TextWidth = 0
 ENT.TextPosition = 75
