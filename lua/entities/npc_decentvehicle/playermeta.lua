@@ -373,6 +373,11 @@ do -- Patches for Realistic bikes from CeiLciuZ
     function ENT:GetHelmetGlass_Yz_250()
         return self:GetNW2Bool("RealisticBike_HelmetGlass_Yz_250")
     end
+
+    -- Patches for Glide Tanks
+    function ENT:GlideGetAimPos()
+        return self.v:LocalToWorld(self.v.TurretOffset or vector_origin) + self:GetVehicleForward() * 100
+    end
 end
 
 local vehiclemeta = FindMetaTable "Vehicle" ---@cast vehiclemeta -?

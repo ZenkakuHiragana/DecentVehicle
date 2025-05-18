@@ -838,18 +838,8 @@ function ENT:SetThrottle(throttle)
             v:LerpThrottle(0)
         end
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
-        local dot = self:GetVehicleForward():Dot(v:GetVelocity())
-        if dot < 100 then
-            v:SwitchGear(throttle < 0 and -1 or 1)
-            v:SetInputFloat(1, "accelerate", math.abs(throttle))
-            v:SetInputFloat(1, "brake", 0)
-        elseif dot * throttle > 0 then
-            v:SetInputFloat(1, "accelerate", math.abs(throttle))
-            v:SetInputFloat(1, "brake", 0)
-        else
-            v:SetInputFloat(1, "accelerate", 0)
-            v:SetInputFloat(1, "brake", math.abs(throttle))
-        end
+        v:SetInputFloat(1, "accelerate", math.max(throttle, 0))
+        v:SetInputFloat(1, "brake", math.max(-throttle, 0))
     elseif isfunction(v.SetThrottle) then ---@cast v Vehicle
         v:SetThrottle(throttle)
         if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then

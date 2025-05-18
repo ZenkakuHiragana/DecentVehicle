@@ -242,6 +242,7 @@
 ---@class dv.Glide : Entity
 ---@field IsGlideVehicle true
 ---@field seats Vehicle[]
+---@field TurretOffset Vector
 ---@field VehicleType integer
 ---@field wheels dv.Glide.Wheel[]
 ---@field ChangeHeadlightState fun(self: dv.Glide, value: integer)
