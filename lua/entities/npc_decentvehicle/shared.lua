@@ -184,18 +184,19 @@
 ---@field GetEngineActive fun(self: dv.LVS): boolean
 ---@field GetEngineTorque fun(self: dv.LVS): number
 ---@field GetLightsHandler fun(self: dv.LVS): dv.LVS.LightsHandler
+---@field GetlvsLockedStatus fun(self: dv.LVS): boolean
 ---@field GetMaxSteerAngle fun(self: dv.LVS): number
 ---@field GetReverse fun(self: dv.LVS): boolean
 ---@field GetSteer fun(self: dv.LVS): number
 ---@field GetThrottle fun(self: dv.LVS): number
 ---@field GetTurnMode fun(self: dv.LVS): integer
----@field GetlvsLockedStatus fun(self: dv.LVS): boolean
 ---@field GetWheels fun(self: dv.LVS): dv.LVS.Wheel[]
 ---@field HasFogLights fun(self: dv.LVS): boolean
 ---@field HasHighBeams fun(self: dv.LVS): boolean
 ---@field HasTurnSignals fun(self: dv.LVS): boolean
 ---@field LerpBrake fun(self: dv.LVS, value: number)
 ---@field LerpThrottle fun(self: dv.LVS, value: number)
+---@field Lock fun(self: dv.LVS)
 ---@field OnHandbrakeActiveChanged fun(self: dv.LVS, active: boolean)
 ---@field ReleaseHandbrake fun(self: dv.LVS)
 ---@field RunAI fun(self: dv.LVS)
@@ -212,10 +213,9 @@
 ---@field SetThrottle fun(self: dv.LVS, value: number)
 ---@field SetTurnMode fun(self: dv.LVS, value: integer)
 ---@field Sign fun(self: dv.LVS, value: number): number
----@field SteerTo fun(self: dv.LVS, value: integer, maxSteer: number)
 ---@field StartEngine fun(self: dv.LVS)
+---@field SteerTo fun(self: dv.LVS, value: integer, maxSteer: number)
 ---@field StopEngine fun(self: dv.LVS)
----@field Lock fun(self: dv.LVS)
 ---@field UnLock fun(self: dv.LVS)
 
 ---@class dv.LVS.Wheel : Entity
