@@ -43,11 +43,16 @@ function ENT:Think()
                 caller:setDarkRPVar("money", math.max(caller.DarkRPVars.money - self.Fare, 0))
             end
 
-            local seats = self.v:GetChildren()
-            if self.v.IsScar then seats = self.v.Seats end
+            local v = self.v
+            local seats = v:GetChildren()
+            if v.IsScar then ---@cast v dv.SCAR
+                seats = v.Seats
+            elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+                seats = v:GetPassengerSeats()
+            end
             for i, s in ipairs(seats) do
                 if not (IsValid(s) and s:IsVehicle()) then continue end ---@cast s Vehicle
-                if self.v.IsScar and not s.IsScarSeat then continue end
+                if v.IsScar and not s.IsScarSeat then continue end
                 local p = s:GetDriver()
                 if IsValid(p) and p:IsPlayer() and self.Caller ~= p then
                     net.Start "Decent Vehicle: The taxi driver says something localized"

@@ -211,7 +211,11 @@ function ENT:GetMoveDirection(ent)
     local is_opposite, foundedwp, lookside, lookback, neighbor = self:GetOppositeLine()
     local move_ok, attposf, attposr ---@type boolean, Vector, Vector
     ---@cast ent dv.Vehicle
-    if ent.IsSimfphyscar then ---@cast ent dv.Simfphys
+    if ent.IsScar then ---@cast ent dv.SCAR
+        local wheels = ent.Wheels
+        attposf = wheels[1]:GetPos()
+        attposr = wheels[3]:GetPos()
+    elseif ent.IsSimfphyscar then ---@cast ent dv.Simfphys
         if not ent.CustomWheels then
             attposf = ent:GetAttachment(ent:LookupAttachment "wheel_fl").Pos
             attposr = ent:GetAttachment(ent:LookupAttachment "wheel_rl").Pos
@@ -220,10 +224,14 @@ function ENT:GetMoveDirection(ent)
             attposf = wheels[1]:GetPos()
             attposr = wheels[3]:GetPos()
         end
-    elseif ent.IsScar then ---@cast ent dv.SCAR
-        local wheels = ent.Wheels
-        attposf = wheels[1]:GetPos()
-        attposr = wheels[3]:GetPos()
+    elseif ent.LVS or ent.LVS_GUNNER then ---@cast ent dv.LVS
+        local wheels = ent:GetWheels()
+        attposf = wheels[1] and wheels[1]:GetPos() or ent:GetPos() + ent:GetForward() * 100
+        attposr = wheels[3] and wheels[3]:GetPos() or ent:GetPos() - ent:GetForward() * 100
+    elseif ent.IsGlideVehicle then ---@cast ent dv.Glide
+        local wheels = ent.wheels
+        attposf = wheels[1] and wheels[1]:GetPos() or ent:GetPos() + ent:GetForward() * 100
+        attposr = wheels[3] and wheels[3]:GetPos() or ent:GetPos() - ent:GetForward() * 100
     elseif ent:GetClass() == "prop_vehicle_jeep" then ---@cast ent Vehicle
         attposf = ent:GetAttachment(ent:LookupAttachment "wheel_fl").Pos
         attposr = ent:GetAttachment(ent:LookupAttachment "wheel_rl").Pos

@@ -172,6 +172,7 @@
 ---@field LVS_GUNNER true
 ---@field AutoReverseVelocity number
 ---@field EngineCurve number
+---@field HornSound CSoundPatch
 ---@field MaxVelocity number
 ---@field MaxVelocityReverse number
 ---@field DisableManualTransmission fun(self: dv.LVS)
@@ -180,14 +181,16 @@
 ---@field GetAI fun(self: dv.LVS): boolean
 ---@field GetBrake fun(self: dv.LVS): number
 ---@field GetDriver fun(self: dv.LVS): Entity
----@field GetDriverSeat fun(self: dv.LVS): Entity
+---@field GetDriverSeat fun(self: dv.LVS): Vehicle
 ---@field GetEngineActive fun(self: dv.LVS): boolean
 ---@field GetEngineTorque fun(self: dv.LVS): number
 ---@field GetFuelTank fun(self: dv.LVS): dv.LVS.FuelTank
 ---@field GetLightsHandler fun(self: dv.LVS): dv.LVS.LightsHandler
 ---@field GetlvsLockedStatus fun(self: dv.LVS): boolean
 ---@field GetMaxSteerAngle fun(self: dv.LVS): number
+---@field GetPassengerSeats fun(self: dv.LVS): Vehicle[]
 ---@field GetReverse fun(self: dv.LVS): boolean
+---@field GetSirenMode fun(self: dv.LVS): integer
 ---@field GetSteer fun(self: dv.LVS): number
 ---@field GetThrottle fun(self: dv.LVS): number
 ---@field GetTurnMode fun(self: dv.LVS): integer
@@ -212,13 +215,16 @@
 ---@field SetNWMaxSteer fun(self: dv.LVS, value: number)
 ---@field SetPivotSteer fun(self: dv.LVS, value: number)
 ---@field SetReverse fun(self: dv.LVS, value: boolean)
+---@field SetSirenMode fun(self: dv.LVS, value: integer)
 ---@field SetSteer fun(self: dv.LVS, value: number)
 ---@field SetThrottle fun(self: dv.LVS, value: number)
 ---@field SetTurnMode fun(self: dv.LVS, value: integer)
 ---@field Sign fun(self: dv.LVS, value: number): number
 ---@field StartEngine fun(self: dv.LVS)
+---@field StartSiren fun(self: dv.LVS, horn: boolean, increment: boolean)
 ---@field SteerTo fun(self: dv.LVS, value: integer, maxSteer: number)
 ---@field StopEngine fun(self: dv.LVS)
+---@field StopSiren fun(self: dv.LVS)
 ---@field UnLock fun(self: dv.LVS)
 
 ---@class dv.LVS.FuelTank : Entity

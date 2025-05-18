@@ -221,6 +221,7 @@ end
 function ENT:GetHazardLights()
     local v = self.v
     if v.IsScar then ---@cast v dv.SCAR
+        return false
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return self.HazardLights
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
@@ -252,7 +253,7 @@ function ENT:GetELS(vehicle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:GetEMSEnabled()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        return false
+        return isfunction(v.GetSirenMode) and v:GetSirenMode() >= 0
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         return v:GetSirenState() == 2
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
@@ -279,7 +280,7 @@ function ENT:GetELSSound(vehicle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.ems and v.ems:IsPlaying()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        return false
+        return isfunction(v.GetSirenMode) and v:GetSirenMode() >= 0
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         return v:GetSirenState() == 2
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
@@ -307,7 +308,7 @@ function ENT:GetHorn(vehicle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.HornKeyIsDown
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        return false -- LVS has horn but it seems too much complicated to handle from code.
+        return IsValid(v.HornSound) and v.HornSound:IsPlaying()
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         return v:GetIsHonking()
     elseif vcmod_main ---@cast v Vehicle
@@ -586,7 +587,14 @@ function ENT:SetELS(on)
         v.KeyPressedTime = CurTime() - dt
         numpad.Deactivate(self --[[@as Player]], KEY_H, false)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        -- Not implemented
+        if on then
+            if isfunction(v.StartSiren) then
+                v:StartSiren(false, true)
+            end
+        elseif isfunction(v.SetSirenMode) and isfunction(v.StopSiren) then
+            v:SetSirenMode(-1)
+            v:StopSiren()
+        end
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         local state = on and 2 or 0
         if v:GetSirenState() ~= state then
@@ -637,7 +645,14 @@ function ENT:SetELSSound(on)
             end
         end
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        -- Not implemented
+        if on then
+            if isfunction(v.StartSiren) then
+                v:StartSiren(false, true)
+            end
+        elseif isfunction(v.SetSirenMode) and isfunction(v.StopSiren) then
+            v:SetSirenMode(-1)
+            v:StopSiren()
+        end
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         local state = on and 2 or 0
         if v:GetSirenState() ~= state then
@@ -683,7 +698,13 @@ function ENT:SetHorn(on)
             v.HornKeyIsDown = false
         end
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        -- Not implemented
+        if IsValid(v.HornSound) then
+            if on then
+                v.HornSound:Play()
+            else
+                v.HornSound:Stop()
+            end
+        end
     elseif v.IsGlideVehicle then ---@cast v dv.Glide
         v:SetIsHonking(on)
     elseif vcmod_main ---@cast v Vehicle
