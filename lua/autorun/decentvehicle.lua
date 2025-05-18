@@ -83,8 +83,9 @@ if not DecentVehicleDestination then
         },
         SeatPos = {
             ["Source_models/airboat.mdl"] = Vector(0, 0, -29),
-            ["Source_models/vehicle.mdl"] = Vector(-8, 0, -24),
+            ["Source_models/vehicle.mdl"] = Vector(-8, 0, -31),
             ["Source_models/sligwolf/motorbike/motorbike.mdl"] = Vector(2, 0, -30),
+            ["Glide_"] = Vector(0, 0, -26),
             ["Simfphys_"] = Vector(2, 0, -28),
         },
         TLDuration = {33, 4, 40 + 3}, -- Sign duration of each light color, Green, Yellow, Red.
