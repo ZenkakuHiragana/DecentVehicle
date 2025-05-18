@@ -403,6 +403,10 @@ function vehiclemeta:GetDriver(...)
         or self:GetVehicleClass() == "realistic_bike_kawasaki_ninja_h2" -- For RealisticBike Kawasaki Ninja H2
         or self:GetVehicleClass() == "realistic_bike_yamaha_yz_250" then -- For RealisticBike YAMAHA Yz 250
             return self.DecentVehicle
+        elseif IsValid(self:GetParent())
+        and self:GetParent().IsGlideVehicle
+        and self.DecentVehicle == self:GetParent().DecentVehicle then
+            return self.DecentVehicle
         end
     end
 

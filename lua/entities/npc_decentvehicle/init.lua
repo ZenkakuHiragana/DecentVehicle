@@ -260,6 +260,8 @@ function ENT:EstimateAccel()
 
             accel = totalForce / totalMass
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        accel = self.EstimatedAccel
     else ---@cast v Vehicle
         local forward = v:GetForward()
         local gearratio = self.GearRatio[v:GetOperatingParams().gear + 1]
@@ -316,6 +318,25 @@ function ENT:GetVehicleParams()
         self.EngineTorque = isfunction(v.GetEngineTorque) and v:GetEngineTorque() or 0
         local ph = v:GetPhysicsObject()
         self.Mass = IsValid(ph) and ph:GetMass() or 1
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        local numFrontWheels = 0
+        local numRearWheels = 0
+        for _, w in ipairs(v.wheels) do
+            if w.isFrontWheel then
+                numFrontWheels = numFrontWheels + 1
+            else
+                numRearWheels = numRearWheels + 1
+            end
+        end
+
+        local ph = v:GetPhysicsObject()
+        local mass = IsValid(ph) and ph:GetMass() or 1
+        local maxTorque = v:GetMaxRPMTorque()
+        local front = 0.5 + v:GetPowerDistribution() * 0.5
+        local frontTorque = maxTorque * front * numFrontWheels
+        local rearTorque = maxTorque * (1 - front) * numRearWheels
+        -- Torque isn't force but it seems Glide applies torque as force
+        self.EstimatedAccel = (frontTorque + rearTorque) / mass
     elseif isfunction(v.GetVehicleParams) then ---@cast v Vehicle
         local params = v:GetVehicleParams()
         local axles = params.axles
@@ -367,6 +388,8 @@ function ENT:GetVehiclePrefix()
         return "Simfphys_"
     elseif self.v.LVS or self.v.LVS_GUNNER then
         return "LVS_"
+    elseif self.v.IsGlideVehicle then
+        return "Glide_"
     else
         return "Source_"
     end
@@ -376,8 +399,6 @@ function ENT:GetVehicleIdentifier()
     local id = ""
     if self.v.IsScar then
         id = self.v:GetClass()
-    elseif self.v.IsSimfphyscar then
-        id = self.v:GetModel() or "INVALID_MODEL"
     else
         id = self.v:GetModel() or "INVALID_MODEL"
     end
@@ -420,6 +441,8 @@ function ENT:AttachModel()
         seat = v.DriverSeat
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         seat = v:GetDriverSeat()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        seat = v.seats and v.seats[1]
     end
 
     if not IsValid(seat) then return end
@@ -459,12 +482,12 @@ end
 ---@return number
 function ENT:GetCurrentMaxSpeed()
     local destlength = self.Waypoint.Target:Distance(self.v:WorldSpaceCenter())
-    local maxspeed = math.Clamp(self.Waypoint.SpeedLimit, 1, self.MaxSpeed)
+    local maxspeed = math.Clamp(self.Waypoint.SpeedLimit, 1, self.MaxSpeed or math.huge)
     if self.PrevWaypoint then
         local total = self.Waypoint.Target:Distance(self.PrevWaypoint.Target)
         local frac = (1 - destlength / total)^2
         if self.NextWaypoint then -- The speed limit is affected by connected waypoints
-            maxspeed = Lerp(frac, maxspeed, math.Clamp(self.NextWaypoint.SpeedLimit, 1, self.MaxSpeed))
+            maxspeed = Lerp(frac, maxspeed, math.Clamp(self.NextWaypoint.SpeedLimit, 1, self.MaxSpeed or math.huge))
         end
 
         -- If the waypoint has a sharp corner, slow down
@@ -635,9 +658,10 @@ function ENT:DriveToWaypoint()
     handbrake = currentspeed > 10 and goback * velocitydot < 0
     or currentspeed > math.max(100, maxspeed * .2) and math.abs(approaching) < .5
 
+    local isScripted = self.v.IsScar or self.v.IsSimfphyscar or self.v.LVS or self.v.LVS_GUNNER or self.v.IsGlideVehicle
     if goback < 0 then
         steering = steering > 0 and -1 or 1
-    elseif handbrake and not (self.v.IsScar or self.v.IsSimfphyscar) then
+    elseif handbrake and not isScripted then
         steering = -steering
     end
 
@@ -652,7 +676,7 @@ function ENT:DriveToWaypoint()
             self.StopByTrace = CurTime() + FrameTime() -- Reset going back timer
         end
 
-        if not (self.v.IsScar or self.v.IsSimfphyscar or self.v.LVS or self.v.LVS_GUNNER)
+        if not isScripted
         and velocitydot * goback * throttle < 0
         and dvd.GetAng(physenv.GetGravity(), forward) < .1 then -- Exception #1: DV is going down
             throttle = 0 -- The solution of the brake issue.
@@ -980,6 +1004,11 @@ function ENT:Initialize()
         ---@cast v dv.LVS
         if not (v:IsVehicle() or v.LVS or v.LVS_GUNNER) then continue end
         if IsValid(v:GetParent()) and v:GetParent():IsVehicle() then continue end
+        ---@cast v dv.Glide
+        if v.IsGlideVehicle and not (
+            v.VehicleType == Glide.VEHICLE_TYPE.CAR
+         or v.VehicleType == Glide.VEHICLE_TYPE.MOTORCYCLE
+         or v.VehicleType == Glide.VEHICLE_TYPE.TANK) then continue end
         local d = self:GetPos():DistToSqr(v:GetPos())
         if d > mindistance then continue end
         ---@cast v dv.Vehicle

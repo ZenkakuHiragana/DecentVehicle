@@ -40,17 +40,8 @@ function ENT:GetMaxSteeringAngle()
         if not isfunction(v.GetMaxSteerAngle) then return 0 end
         if not isfunction(v.SetNWMaxSteer) then return 0 end -- For lvs_base_wheeldrive_trailer
         return v:GetMaxSteerAngle()
-        -- local vel = v:GetVelocity()
-        -- local forward = self:GetVehicleForward()
-        -- local speed = vel:Dot(forward)
-        -- local max = v:GetMaxSteerAngle()
-        -- if speed > (v.FastSteerActiveVelocity or math.huge) then
-        --     local driftAngle = math.deg(math.acos(vel:GetNormalized():Dot(forward)))
-        --     if driftAngle < (v.FastSteerDeactivationDriftAngle or math.huge) then
-        --         max = math.min(max, (v.FastSteerAngleClamp or max))
-        --     end
-        -- end
-        -- return max
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetMaxSteerAngle()
     else ---@cast v Vehicle
         local mph = v:GetSpeed()
         if mph < self.SteeringSpeedFast then
@@ -90,6 +81,9 @@ function ENT:GetEngineStarted(vehicle)
         return v:EngineActive()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         return v:GetEngineActive()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        -- Returns true when the engine is starting or running
+        return v:GetEngineState() == 1 or v:GetEngineState() == 2
     else ---@cast v Vehicle
         return v:IsEngineStarted()
     end
@@ -104,6 +98,8 @@ function ENT:GetLocked(vehicle)
         return v.VehicleLocked
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         return v:GetlvsLockedStatus()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetIsLocked()
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_isLocked) then
         return v:VC_isLocked()
@@ -118,14 +114,16 @@ function ENT:GetRunningLights()
         return v:GetNWBool "HeadlightsOn"
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return self.SimfphysRunningLights
-    elseif vcmod_main ---@cast v Vehicle
-    and isfunction(v.VC_getStates) then
-        local states = v:VC_getStates()
-        return istable(states) and states.RunningLights
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
         return isfunction(v.HasFogLights) and v:HasFogLights()
            and IsValid(lh) and lh:GetFogActive()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return false -- v:GetHeadlightState() == 1
+    elseif vcmod_main ---@cast v Vehicle
+    and isfunction(v.VC_getStates) then
+        local states = v:VC_getStates()
+        return istable(states) and states.RunningLights
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -141,14 +139,16 @@ function ENT:GetFogLights()
         return v:GetNWBool "HeadlightsOn"
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return self.SimfphysFogLights
-    elseif vcmod_main ---@cast v Vehicle
-    and isfunction(v.VC_getStates) then
-        local states = v:VC_getStates()
-        return istable(states) and states.FogLights
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
         return isfunction(v.HasFogLights) and v:HasFogLights()
            and IsValid(lh) and lh:GetFogActive()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return false -- v:GetHeadlightState() == 1
+    elseif vcmod_main ---@cast v Vehicle
+    and isfunction(v.VC_getStates) then
+        local states = v:VC_getStates()
+        return istable(states) and states.FogLights
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -164,10 +164,6 @@ function ENT:GetLights(highbeams)
         return v:GetNWBool "HeadlightsOn"
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return Either(highbeams, v.LampsActivated, v.LightsActivated)
-    elseif vcmod_main ---@cast v Vehicle
-    and isfunction(v.VC_getStates) then
-        local states = v:VC_getStates()
-        return istable(states) and Either(highbeams, states.HighBeams, states.LowBeams)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         local lh = isfunction(v.GetLightsHandler) and v:GetLightsHandler()
         if not (IsValid(lh) and lh:GetActive()) then return false end
@@ -176,6 +172,12 @@ function ENT:GetLights(highbeams)
         else
             return lh:GetActive()
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetHeadlightState() == (highbeams and 2 or 1)
+    elseif vcmod_main ---@cast v Vehicle
+    and isfunction(v.VC_getStates) then
+        local states = v:VC_getStates()
+        return istable(states) and Either(highbeams, states.HighBeams, states.LowBeams)
     elseif Photon2 ---@cast v Vehicle
     and isfunction(v.GetPhotonControllerFromAncestor) then
         local pc = v:GetPhotonControllerFromAncestor()
@@ -197,6 +199,8 @@ function ENT:GetTurnLight(left)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         if not (isfunction(v.HasTurnSignals) and v:HasTurnSignals()) then return false end
         return isfunction(v.GetTurnMode) and v:GetTurnMode() == (left and 1 or 2)
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetTurnSignalState() == (left and 1 or 2)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -222,6 +226,8 @@ function ENT:GetHazardLights()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         if not (isfunction(v.HasTurnSignals) and v:HasTurnSignals()) then return false end
         return isfunction(v.GetTurnMode) and v:GetTurnMode() == 3
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetTurnSignalState() == 3
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -246,6 +252,8 @@ function ENT:GetELS(vehicle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:GetEMSEnabled()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return false
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
         return false
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSLightsOn) then
@@ -272,6 +280,8 @@ function ENT:GetELSSound(vehicle)
         return v.ems and v.ems:IsPlaying()
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         return false
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return false
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_getELSSoundOn)
     and isfunction(v.VC_getStates) then
@@ -297,7 +307,9 @@ function ENT:GetHorn(vehicle)
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v.HornKeyIsDown
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
-        return false
+        return false -- LVS has horn but it seems too much complicated to handle from code.
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetIsHonking()
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates) then
         local states = v:VC_getStates()
@@ -330,6 +342,11 @@ function ENT:SetRunningLights(on)
         if IsValid(lh) and isfunction(v.HasFogLights) and v:HasFogLights() then
             lh:SetFogActive(on)
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        -- local state = on and 1 or 0
+        -- if v:GetHeadlightState() ~= state then
+        --     v:ChangeHeadlightState(state)
+        -- end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setRunningLights) then
         v:VC_setRunningLights(on)
@@ -357,6 +374,11 @@ function ENT:SetFogLights(on)
         if IsValid(lh) and isfunction(v.HasFogLights) and v:HasFogLights() then
             lh:SetFogActive(on)
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        -- local state = on and 1 or 0
+        -- if v:GetHeadlightState() ~= state then
+        --     v:ChangeHeadlightState(state)
+        -- end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setFogLights) then
         v:VC_setFogLights(on)
@@ -403,6 +425,11 @@ function ENT:SetLights(on, highbeams)
         lh:SetActive(on)
         if highbeams and isfunction(v.HasHighBeams) and v:HasHighBeams() then
             lh:SetHighActive(on)
+        end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        local state = on and (highbeams and 2 or 1) or 0
+        if v:GetHeadlightState() ~= state then
+            v:ChangeHeadlightState(state)
         end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setHighBeams)
@@ -458,6 +485,11 @@ function ENT:SetTurnLight(on, left)
         else
             v:SetTurnMode(0)
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        local state = on and (left and 1 or 2) or 0
+        if v:GetTurnSignalState() ~= state then
+            v:ChangeTurnSignalState(state)
+        end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setTurnLightLeft)
     and isfunction(v.VC_setTurnLightRight) then
@@ -509,6 +541,11 @@ function ENT:SetHazardLights(on)
            and isfunction(v.HasTurnSignals)
            and v:HasTurnSignals()) then return end
         v:SetTurnMode(on and 3 or 0)
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        local state = on and 3 or 0
+        if v:GetTurnSignalState() ~= state then
+            v:ChangeTurnSignalState(state)
+        end
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_setHazardLights) then
         v:VC_setHazardLights(on)
@@ -549,6 +586,8 @@ function ENT:SetELS(on)
         v.KeyPressedTime = CurTime() - dt
         numpad.Deactivate(self --[[@as Player]], KEY_H, false)
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        -- Not implemented
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
         -- Not implemented
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSLights)
@@ -596,6 +635,8 @@ function ENT:SetELSSound(on)
         end
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         -- Not implemented
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        -- Not implemented
     elseif vcmod_main and vcmod_els ---@cast v Vehicle
     and isfunction(v.VC_setELSSound) then
         v:VC_setELSSound(on)
@@ -637,6 +678,8 @@ function ENT:SetHorn(on)
         end
     elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
         -- Not implemented
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        v:SetIsHonking(on)
     elseif vcmod_main ---@cast v Vehicle
     and isfunction(v.VC_getStates)
     and isfunction(v.VC_setStates) then
@@ -677,6 +720,8 @@ function ENT:SetLocked(locked)
         else
             v:UnLock()
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        v:SetLocked(locked)
     else ---@cast v Vehicle
         for _, seat in pairs(v:GetChildren()) do ---@cast seat Vehicle
             if not (seat:IsVehicle() and seat.__SW_Vars) then continue end
@@ -717,6 +762,12 @@ function ENT:SetEngineStarted(on)
         else
             v:StopEngine()
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        if on then
+            v:TurnOn()
+        else
+            v:TurnOff()
+        end
     elseif isfunction(v.StartEngine) then ---@cast v Vehicle
         v:StartEngine(on)
     end
@@ -740,6 +791,8 @@ function ENT:SetHandbrake(brake)
         else
             if isfunction(v.ReleaseHandbrake) then v:ReleaseHandbrake() end
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        v:SetInputBool(1, "handbrake", brake)
     elseif isfunction(v.SetHandbrake) then ---@cast v Vehicle
         v:SetHandbrake(brake)
         if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
@@ -784,6 +837,19 @@ function ENT:SetThrottle(throttle)
             v:LerpBrake(math.abs(throttle))
             v:LerpThrottle(0)
         end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        local dot = self:GetVehicleForward():Dot(v:GetVelocity())
+        if dot < 100 then
+            v:SwitchGear(throttle < 0 and -1 or 1)
+            v:SetInputFloat(1, "accelerate", math.abs(throttle))
+            v:SetInputFloat(1, "brake", 0)
+        elseif dot * throttle > 0 then
+            v:SetInputFloat(1, "accelerate", math.abs(throttle))
+            v:SetInputFloat(1, "brake", 0)
+        else
+            v:SetInputFloat(1, "accelerate", 0)
+            v:SetInputFloat(1, "brake", math.abs(throttle))
+        end
     elseif isfunction(v.SetThrottle) then ---@cast v Vehicle
         v:SetThrottle(throttle)
         if Photon2 and isfunction(v.GetPhotonControllerFromAncestor) then
@@ -819,6 +885,8 @@ function ENT:SetSteering(steering)
         and isfunction(v.SetPivotSteer)) then return end
         v:SteerTo(steering, v:GetMaxSteerAngle())
         v:SetPivotSteer(0)
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        v:SetInputFloat(1, "steer", steering)
     elseif isfunction(v.SetSteering) then ---@cast v Vehicle
         v:SetSteering(steering, 0)
     end
@@ -875,6 +943,12 @@ function ENT:InitializeVehicle(vehicle)
 
         self.v = vehicle
         self.v.DecentVehicle = self
+    elseif vehicle.IsGlideVehicle then ---@cast vehicle dv.Glide
+        self.v = vehicle
+        self.v.DecentVehicle = self
+        if self.v.seats and IsValid(self.v.seats[1]) then
+            self.v.seats[1].DecentVehicle = self
+        end
     elseif ---@cast vehicle Vehicle
     isfunction(vehicle.GetWheelCount) and vehicle:GetWheelCount() -- Not a chair
     and isfunction(vehicle.IsEngineEnabled) and vehicle:IsEngineEnabled() -- Engine is not locked
@@ -915,6 +989,10 @@ function ENT:OnRemoveVehicle()
         if isfunction(v.SetActive)       then v:SetActive(false)  end
         if isfunction(v.SetThrottle)     then v:SetThrottle(0)    end
         if isfunction(v.SetSteer)        then v:SetSteer(0)       end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        if self.v.seats and IsValid(self.v.seats[1]) then
+            self.v.seats[1].DecentVehicle = nil
+        end
     else ---@cast v Vehicle
         v:RemoveCallback("PhysicsCollide", self.OnCollideCallback)
         v:SetSaveValue("m_nSpeed", 0)
@@ -934,6 +1012,10 @@ function ENT:IsDestroyed()
         return v:IsDestroyed()
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:GetCurHealth() <= 0
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        return v:IsDestroyed()
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return v:GetChassisHealth() < 1
     elseif isfunction(v.VC_getHealth) then ---@cast v Vehicle
         local health = v:VC_getHealth(false)
         return isnumber(health) and health <= 0
@@ -948,6 +1030,12 @@ function ENT:ShouldRefuel()
         return v:GetFuelPercent() < self.RefuelThreshold
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         return v:GetFuel() / v:GetMaxFuel() < self.RefuelThreshold
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local fueltank = v:GetFuelTank()
+        if not IsValid(fueltank) then return false end
+        return fueltank:GetFuel() < self.RefuelThreshold
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return false
     elseif isfunction(v.VC_fuelGet) ---@cast v Vehicle
     and isfunction(v.VC_fuelGetMax) then
         return v:VC_fuelGet(false) / v:VC_fuelGetMax() < self.RefuelThreshold
@@ -961,6 +1049,15 @@ function ENT:Refuel()
         v:Refuel()
     elseif v.IsSimfphyscar then ---@cast v dv.Simfphys
         v:SetFuel(v:GetMaxFuel())
+    elseif v.LVS or v.LVS_GUNNER then ---@cast v dv.LVS
+        local fueltank = v:GetFuelTank()
+        if not IsValid(fueltank) then return end
+        fueltank:SetFuel(1)
+        if isfunction(v.OnRefueled) then
+            v:OnRefueled()
+        end
+    elseif v.IsGlideVehicle then ---@cast v dv.Glide
+        return
     elseif isfunction(v.VC_fuelSet) ---@cast v Vehicle
     and isfunction(v.VC_fuelGetMax) then
         v:VC_fuelSet(v:VC_fuelGetMax())

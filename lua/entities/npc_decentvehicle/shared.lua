@@ -183,6 +183,7 @@
 ---@field GetDriverSeat fun(self: dv.LVS): Entity
 ---@field GetEngineActive fun(self: dv.LVS): boolean
 ---@field GetEngineTorque fun(self: dv.LVS): number
+---@field GetFuelTank fun(self: dv.LVS): dv.LVS.FuelTank
 ---@field GetLightsHandler fun(self: dv.LVS): dv.LVS.LightsHandler
 ---@field GetlvsLockedStatus fun(self: dv.LVS): boolean
 ---@field GetMaxSteerAngle fun(self: dv.LVS): number
@@ -194,10 +195,12 @@
 ---@field HasFogLights fun(self: dv.LVS): boolean
 ---@field HasHighBeams fun(self: dv.LVS): boolean
 ---@field HasTurnSignals fun(self: dv.LVS): boolean
+---@field IsDestroyed fun(self: dv.LVS): boolean
 ---@field LerpBrake fun(self: dv.LVS, value: number)
 ---@field LerpThrottle fun(self: dv.LVS, value: number)
 ---@field Lock fun(self: dv.LVS)
 ---@field OnHandbrakeActiveChanged fun(self: dv.LVS, active: boolean)
+---@field OnRefueled fun(self: dv.LVS)
 ---@field ReleaseHandbrake fun(self: dv.LVS)
 ---@field RunAI fun(self: dv.LVS)
 ---@field SetActive fun(self: dv.LVS, value: boolean)
@@ -218,11 +221,9 @@
 ---@field StopEngine fun(self: dv.LVS)
 ---@field UnLock fun(self: dv.LVS)
 
----@class dv.LVS.Wheel : Entity
----@field GetRadius fun(self: dv.LVS.Wheel): number
----@field GetRotationAxis fun(self: dv.LVS.Wheel): Vector
----@field GetTorqueFactor fun(self: dv.LVS.Wheel): number
----@field VelToRPM fun(self: dv.LVS.Wheel, velocity: number): number
+---@class dv.LVS.FuelTank : Entity
+---@field GetFuel fun(self: dv.LVS.FuelTank): number
+---@field SetFuel fun(self: dv.LVS.FuelTank, value: number)
 
 ---@class dv.LVS.LightsHandler : Entity
 ---@field GetActive fun(self: dv.LVS.LightsHandler): boolean
@@ -232,11 +233,45 @@
 ---@field SetFogActive fun(self: dv.LVS.LightsHandler, value: boolean)
 ---@field SetHighActive fun(self: dv.LVS.LightsHandler, value: boolean)
 
+---@class dv.LVS.Wheel : Entity
+---@field GetRadius fun(self: dv.LVS.Wheel): number
+---@field GetRotationAxis fun(self: dv.LVS.Wheel): Vector
+---@field GetTorqueFactor fun(self: dv.LVS.Wheel): number
+---@field VelToRPM fun(self: dv.LVS.Wheel, velocity: number): number
+
+---@class dv.Glide : Entity
+---@field IsGlideVehicle true
+---@field VehicleType integer
+---@field seats Vehicle[]
+---@field wheels dv.Glide.Wheel[]
+---@field ChangeHeadlightState fun(self: dv.Glide, value: integer)
+---@field ChangeTurnSignalState fun(self: dv.Glide, value: integer)
+---@field GetChassisHealth fun(self: dv.Glide): number
+---@field GetMaxSteerAngle fun(self: dv.Glide): number
+---@field GetMaxRPMTorque fun(self: dv.Glide): number
+---@field GetPowerDistribution fun(self: dv.Glide): number
+---@field GetEngineState fun(self: dv.Glide): integer
+---@field GetIsLocked fun(self: dv.Glide): boolean
+---@field GetIsHonking fun(self: dv.Glide): boolean
+---@field GetHeadlightState fun(self: dv.Glide): integer
+---@field GetTurnSignalState fun(self: dv.Glide): integer
+---@field SetInputBool fun(self: dv.Glide, seatIndex: integer, action: string, value: boolean)
+---@field SetInputFloat fun(self: dv.Glide, seatIndex: integer, action: string, value: number)
+---@field SetIsHonking fun(self: dv.Glide, value: boolean)
+---@field SetLocked fun(self: dv.Glide, value: boolean, doNotNotify: boolean?)
+---@field TurnOff fun(self: dv.Glide)
+---@field TurnOn fun(self: dv.Glide)
+
+---@class dv.Glide.Wheel : Entity
+---@field isFrontWheel boolean
+---@field GetRadius fun(self: dv.Glide.Wheel): number
+
 ---@alias dv.Vehicle
 ---| Vehicle
 ---| dv.SCAR
 ---| dv.Simfphys
 ---| dv.LVS
+---| dv.Glide
 
 ---@class ENT.DecentVehicle : Structure.ENT, Entity, ENTITY
 ---@field Group             integer
@@ -292,6 +327,8 @@ function ENT:GetVehicleForward(v)
         return vehicle:GetForward()
     elseif vehicle.IsSimfphyscar then
         return vehicle:LocalToWorldAngles(vehicle.VehicleData.LocalAngForward or angle_zero):Forward()
+    elseif vehicle.IsGlideVehicle then
+        return vehicle:GetForward()
     else
         return vehicle:GetForward()
     end
@@ -307,6 +344,8 @@ function ENT:GetVehicleRight(v)
         return vehicle:GetRight()
     elseif vehicle.IsSimfphyscar then
         return vehicle:LocalToWorldAngles(vehicle.VehicleData.LocalAngForward or angle_zero):Right()
+    elseif vehicle.IsGlideVehicle then
+        return vehicle:GetRight()
     else
         return vehicle:GetRight()
     end
@@ -322,6 +361,8 @@ function ENT:GetVehicleUp(v)
         return vehicle:GetUp()
     elseif vehicle.IsSimfphyscar then
         return vehicle:LocalToWorldAngles(vehicle.VehicleData.LocalAngForward or angle_zero):Up()
+    elseif vehicle.IsGlideVehicle then
+        return vehicle:GetUp()
     else
         return vehicle:GetUp()
     end
